@@ -10,7 +10,7 @@ image = (
     modal.Image.debian_slim(python_version="3.12")
     .apt_install("ffmpeg")
     .pip_install("torch==2.5.1", "torchaudio==2.5.1", index_url="https://download.pytorch.org/whl/cpu")
-    .pip_install("onnxruntime==1.20.1", "fastapi==0.115.6", "python-multipart==0.0.20", "numpy<2.2", "soundfile==0.12.1")
+    .pip_install("onnxruntime==1.20.1", "fastapi==0.115.6", "python-multipart==0.0.20", "numpy<2.2", "soundfile==0.12.1", "anthropic==2.8.0")
     .env({"MODEL_DIR": "/models/indic-conformer", "DATA_DIR": "/data", "ASR_THREADS": "2"})
     .add_local_dir("kahani", "/root/kahani", ignore=["__pycache__"])
 )
@@ -20,7 +20,7 @@ app = modal.App("kahani-tak", image=image)
 
 
 @app.function(cpu=2.0, memory=6144, volumes={"/models": models, "/data": data},
-              secrets=[modal.Secret.from_name("kahani-test")],
+              secrets=[modal.Secret.from_name("kahani-test"), modal.Secret.from_name("kahani-llm")],
               min_containers=1, max_containers=1, timeout=300, scaledown_window=1200)
 @modal.concurrent(max_inputs=8)
 @modal.asgi_app()

@@ -326,6 +326,45 @@ def teacher_confirm(code: str, body: ConfirmIn, x_teacher_key: str | None = Head
     return {"reading_id": body.reading_id, "passed": passed, "mistakes": mistakes, "model_passed": bool(r["passed"])}
 
 
+class PlanIn(BaseModel):
+    prompt: str | None = None
+
+
+def class_data(con, code):
+    """Children of one class (latest finished check each), anonymous labels, waiting count, missed words."""
+    from kahani.agent import ClassData
+    import collections
+    sessions = con.execute("select id, child_key from sessions where teacher_code=? order by created", (code.upper(),)).fetchall()
+    latest, missed = {}, collections.defaultdict(collections.Counter)
+    words_by_child = collections.defaultdict(list)
+    for srow in sessions:
+        st = session_state(con, srow["id"])
+        if st["final_level"]:
+            latest[srow["child_key"]] = (st["final_level"], st["teacher_checked"])
+        for rd in st["readings"]:
+            words_by_child[srow["child_key"]] += [w["text"] for w in rd["words"] if not w["ok"]]
+    children = []
+    for i, (ck, (lv, checked)) in enumerate(latest.items(), 1):
+        children.append({"label": f"बच्चा {i}", "level": lv, "teacher_checked": checked})
+        missed[lv].update(words_by_child[ck])
+    waiting = con.execute("select count(*) from readings r join sessions s on s.id=r.session_id where s.teacher_code=? "
+                          "and r.needs_teacher=1 and r.confirmed_at is null", (code.upper(),)).fetchone()[0]
+    cards = CARDS[SET_IDS[0]]
+    return ClassData(children, waiting, missed, {"letter": cards["letter"], "word": cards["word"],
+                                                 "paragraph": cards["paragraph"], "story": cards["story"]})
+
+
+@app.post("/api/teacher/{code}/plan")
+def teacher_plan(code: str, body: PlanIn, x_teacher_key: str | None = Header(default=None)):
+    """The class-planner agent (also registered in AgentFoundry's Agent Studio; invoked there over HTTP)."""
+    from kahani import agent
+    con = db(); _teacher(con, code, x_teacher_key)
+    try:
+        return agent.plan(class_data(con, code), body.prompt or "")
+    except agent.PlannerUnavailable as e:
+        raise HTTPException(503, {"code": "planner_unavailable", "message": str(e)})
+
+
 # ---------- impact ----------
 @app.get("/api/impact")
 def impact():

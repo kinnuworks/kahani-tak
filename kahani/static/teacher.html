@@ -12,6 +12,8 @@
   <p class="note">माता-पिता को यह लिंक भेजें: <b id="share"></b> <button id="copy">कॉपी</button></p>
   <p class="note" id="private-note">🔒 यह पेज सिर्फ़ आपका है। इसका पूरा लिंक (पता) अपने पास सँभालकर रखें और किसी को न भेजें। इसी लिंक से आप जाँच पक्की कर सकती हैं।</p>
   <p id="counts"></p>
+  <button id="plan-btn" class="secondary">🗓 कल की योजना बनाइए (स्तर के हिसाब से समूह)</button>
+  <div id="plan" class="note" hidden style="white-space:pre-wrap"></div>
   <div id="items"></div>
   <p class="small">हर जाँच में लाल शब्द मशीन ने गलत माने। सुनकर जो शब्द सच में गलत/छूटे हों, उन्हें दबाकर लाल करें, बाकी हरे रखें, फिर "पक्का करें" दबाएँ। आपकी जाँच के बाद रिकॉर्डिंग मिटा दी जाती है।</p>
 </section>
@@ -64,6 +66,14 @@ async function load() {
     d.append(words, play, ok); box.append(d);
   }
 }
+document.getElementById("plan-btn").onclick = async () => {
+  const b = document.getElementById("plan-btn"), out = document.getElementById("plan");
+  b.disabled = true; out.hidden = false; out.textContent = "योजना बन रही है… (लगभग आधा मिनट)";
+  const r = await fetch(`/api/teacher/${code}/plan`, { method: "POST", headers: { "Content-Type": "application/json", ...H }, body: "{}" });
+  const d = await r.json().catch(() => ({}));
+  out.textContent = r.ok ? d.response : "योजना नहीं बन पाई (" + r.status + "). थोड़ी देर बाद फिर कोशिश करें।";
+  b.disabled = false;
+};
 if (code) { load(); setInterval(() => { if (![...document.querySelectorAll("audio")].some((a) => !a.paused)) load(); }, 30000); }
 </script>
 </body></html>
