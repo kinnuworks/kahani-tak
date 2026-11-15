@@ -61,9 +61,12 @@ test("teacher checks an unsure reading", async ({ page, request }) => {
   await expect(page.locator("#share")).toContainText("?t=" + t.code);
   const card = page.locator("#items .card").first();
   await expect(card).toContainText("शब्द");
-  await card.locator(".marked span").first().click();   // teacher flips one word
+  await card.locator(".marked span.bad").first().click(); // teacher hears this word was read right
   await card.getByRole("button", { name: "पक्का करें" }).click();
   await expect(page.locator("#items")).toContainText("पक्का हो गया");
+  // the class-planner agent writes tomorrow's plan from the class data
+  await page.locator("#plan-btn").click();
+  await expect(page.locator("#plan")).toContainText("शब्द", { timeout: 120_000 });
   const st = await (await request.get("/api/session/" + s.session_id)).json();
   expect(st.teacher_checked).toBe(true);
   // our own runs carry the test token and must never move the public impact numbers
