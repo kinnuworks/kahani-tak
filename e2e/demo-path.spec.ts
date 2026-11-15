@@ -4,7 +4,25 @@ import path from "path";
 
 // Parent loop on a phone: consent -> paragraph card -> child reads (fake mic plays a real clip) ->
 // marked words -> story card -> final level on the ladder + tonight's practice.
+// The "microphone" plays a real clip from its start when recording begins (Chrome's own fake device
+// loops from browser launch, so a recording could start mid-sentence). Recording, upload, speech
+// model and scoring are all real.
+async function micPlays(page, clip: string) {
+  const b64 = fs.readFileSync(path.resolve(__dirname, "../tests/fixtures", clip)).toString("base64");
+  await page.addInitScript((data) => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const ctx = new AudioContext();
+      const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+      const buf = await ctx.decodeAudioData(bytes.buffer);
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const dest = ctx.createMediaStreamDestination(); src.connect(dest); src.start();
+      return dest.stream;
+    };
+  }, b64);
+}
+
 test("parent checks a child's reading level", async ({ page }) => {
+  await micPlays(page, "paragraph-18.wav");
   await page.goto("/?set=A");                       // the fake microphone reads card set A
   await expect(page.getByRole("heading", { name: /Kahani Tak/ })).toBeVisible();
   await expect(page.locator("#begin")).toBeDisabled();

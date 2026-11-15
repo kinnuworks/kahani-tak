@@ -12,8 +12,7 @@ export default defineConfig({
     viewport: { width: 412, height: 915 },   // a phone
     locale: "hi-IN",
     launchOptions: { args: [
-      "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
-      "--use-file-for-fake-audio-capture=" + path.resolve(__dirname, "fixtures/paragraph-18-padded.wav"),
+      "--use-fake-ui-for-media-stream", "--autoplay-policy=no-user-gesture-required",
     ] },
   },
   webServer: local ? {
