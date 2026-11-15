@@ -11,6 +11,8 @@ export default defineConfig({
     video: "on",                       // rough cut of the real demo path
     viewport: { width: 412, height: 915 },   // a phone
     locale: "hi-IN",
+    // our own runs are marked so they never count on the public impact page
+    extraHTTPHeaders: process.env.TEST_TOKEN ? { "X-Test-Token": process.env.TEST_TOKEN } : {},
     launchOptions: { args: [
       "--use-fake-ui-for-media-stream", "--autoplay-policy=no-user-gesture-required",
     ] },

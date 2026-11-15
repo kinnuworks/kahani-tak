@@ -9,7 +9,7 @@ import tempfile
 import threading
 import time
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -23,6 +23,12 @@ LEVELS = ["beginner", "letter", "word", "paragraph", "story"]
 AUDIO_KEEP_DAYS = 7
 MAX_AUDIO_BYTES = 8 * 1024 * 1024
 _lock = threading.Lock()
+after_write = None   # set by the host (Modal) to persist the data volume
+
+
+def _wrote():
+    if after_write:
+        after_write()
 
 
 def data_dir():
@@ -42,6 +48,8 @@ def db():
         heard text, words text, mistakes int, total int, passed int, needs_teacher int, audio text,
         audio_secs real, model_secs real, teacher_words text, teacher_passed int, confirmed_at text);
     """)
+    if "is_test" not in [r[1] for r in con.execute("pragma table_info(sessions)")]:
+        con.execute("alter table sessions add column is_test int default 0")
     return con
 
 
@@ -97,8 +105,14 @@ class SessionIn(BaseModel):
     set_id: str | None = None
 
 
+def is_test_request(token):
+    """Our own automated checks send X-Test-Token; those sessions never count as impact."""
+    want = os.environ.get("TEST_TOKEN", "")
+    return bool(want) and bool(token) and secrets.compare_digest(token, want)
+
+
 @app.post("/api/session")
-def new_session(body: SessionIn):
+def new_session(body: SessionIn, x_test_token: str | None = Header(default=None)):
     if not body.consent:
         raise HTTPException(400, "parent consent is required")
     if not (1 <= body.klass <= 8) or not (4 <= len(body.child_key) <= 64):
@@ -115,7 +129,9 @@ def new_session(body: SessionIn):
         set_id = SET_IDS[(n + int(secrets.randbelow(len(SET_IDS)) if n == 0 else 0)) % len(SET_IDS)]
     sid = secrets.token_urlsafe(12)
     with _lock, con:
-        con.execute("insert into sessions values(?,?,?,?,?,?)", (sid, now(), body.klass, body.child_key, teacher, set_id))
+        con.execute("insert into sessions(id,created,klass,child_key,teacher_code,set_id,is_test) values(?,?,?,?,?,?,?)",
+                    (sid, now(), body.klass, body.child_key, teacher, set_id, int(is_test_request(x_test_token))))
+    _wrote()
     return {"session_id": sid, "set_id": set_id, "level": "paragraph", "card": card_for(set_id, "paragraph"),
             "teacher_linked": teacher is not None}
 
@@ -200,6 +216,7 @@ async def read(session_id: str = Form(...), level: str = Form(...), audio: Uploa
                     (rid, session_id, now(), level, heard, json.dumps(result["words"], ensure_ascii=False),
                      result["mistakes"], result["total"], int(result["passed"]), int(unsure), str(path), secs,
                      round(time.time() - t0, 2)))
+    _wrote()
     st = session_state(con, session_id)
     return {"reading_id": rid, "level": level, "words": result["words"], "mistakes": result["mistakes"],
             "passed": result["passed"], "needs_teacher": unsure, "heard": heard,
@@ -223,6 +240,7 @@ def new_teacher(body: TeacherIn):
     con = db()
     with _lock, con:
         con.execute("insert into teachers values(?,?,?)", (code, body.name.strip()[:60], now()))
+    _wrote()
     return {"code": code, "name": body.name.strip()[:60]}
 
 
@@ -293,6 +311,7 @@ def teacher_confirm(code: str, body: ConfirmIn):
     with _lock, con:
         con.execute("update readings set teacher_words=?, teacher_passed=?, confirmed_at=?, audio=null where id=?",
                     (json.dumps(fixed, ensure_ascii=False), int(passed), now(), body.reading_id))
+    _wrote()
     return {"reading_id": body.reading_id, "passed": passed, "mistakes": mistakes, "model_passed": bool(r["passed"])}
 
 
@@ -300,23 +319,24 @@ def teacher_confirm(code: str, body: ConfirmIn):
 @app.get("/api/impact")
 def impact():
     con = db()
-    sessions = [r["id"] for r in con.execute("select id from sessions where id in (select session_id from readings)")]
+    sessions = [r["id"] for r in con.execute("select id from sessions where is_test=0 and id in (select session_id from readings)")]
     levels = {k: 0 for k in LEVELS}
     for sid in sessions:
         f = session_state(con, sid)["final_level"]
         if f:
             levels[f] += 1
     one = lambda q: con.execute(q).fetchone()[0]
-    checked = one("select count(*) from readings where confirmed_at is not null")
-    agree = one("select count(*) from readings where confirmed_at is not null and teacher_passed=passed")
-    return {"children_checked": one("select count(distinct child_key) from sessions where id in (select session_id from readings)"),
-            "checks_finished": sum(levels.values()), "readings": one("select count(*) from readings"),
+    R = "(select r.* from readings r join sessions s on s.id=r.session_id where s.is_test=0)"
+    checked = one(f"select count(*) from {R} where confirmed_at is not null")
+    agree = one(f"select count(*) from {R} where confirmed_at is not null and teacher_passed=passed")
+    return {"children_checked": one("select count(distinct child_key) from sessions where is_test=0 and id in (select session_id from readings)"),
+            "checks_finished": sum(levels.values()), "readings": one(f"select count(*) from {R}"),
             "levels": levels, "teacher_checked": checked, "teacher_agreed": agree,
-            "rechecked_children": one("select count(*) from (select child_key from sessions where id in "
+            "rechecked_children": one("select count(*) from (select child_key from sessions where is_test=0 and id in "
                                       "(select session_id from readings) group by child_key having count(*)>1)"),
-            "teachers": one("select count(distinct teacher_code) from sessions where teacher_code is not null"),
-            "median_model_secs": one("select model_secs from readings order by model_secs limit 1 offset "
-                                     "(select count(*)/2 from readings)") if one("select count(*) from readings") else None,
+            "teachers": one("select count(distinct teacher_code) from sessions where is_test=0 and teacher_code is not null"),
+            "median_model_secs": one(f"select model_secs from {R} order by model_secs limit 1 offset "
+                                     f"(select count(*)/2 from {R})") if one(f"select count(*) from {R}") else None,
             "updated": now()}
 
 

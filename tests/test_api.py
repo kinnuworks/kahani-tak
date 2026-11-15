@@ -94,3 +94,18 @@ def test_impact_page_and_parent_page_serve(client):
     for path in ["/", "/impact", "/teacher"]:
         r = client.get(path)
         assert r.status_code == 200 and "Kahani Tak" in r.text
+
+
+def test_test_traffic_is_not_counted_as_impact(client, monkeypatch):
+    monkeypatch.setenv("TEST_TOKEN", "t0ken")
+    before = client.get("/api/impact").json()["children_checked"]
+    body = {"klass": 3, "consent": True, "child_key": "probe-child-x", "set_id": "A"}
+    s = client.post("/api/session", json=body, headers={"X-Test-Token": "t0ken"}).json()
+    with open(FIX / "paragraph-18.wav", "rb") as f:
+        client.post("/api/read", data={"session_id": s["session_id"], "level": "paragraph"}, files={"audio": ("a.wav", f, "audio/wav")})
+    assert client.get("/api/impact").json()["children_checked"] == before
+    # a wrong token is an ordinary (counted) session, never an error
+    s2 = client.post("/api/session", json={**body, "child_key": "probe-child-y"}, headers={"X-Test-Token": "nope"}).json()
+    with open(FIX / "paragraph-18.wav", "rb") as f:
+        client.post("/api/read", data={"session_id": s2["session_id"], "level": "paragraph"}, files={"audio": ("a.wav", f, "audio/wav")})
+    assert client.get("/api/impact").json()["children_checked"] == before + 1
