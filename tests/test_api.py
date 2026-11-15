@@ -130,3 +130,27 @@ def test_test_traffic_is_not_counted_as_impact(client, monkeypatch):
     with open(FIX / "paragraph-18.wav", "rb") as f:
         client.post("/api/read", data={"session_id": s2["session_id"], "level": "paragraph"}, files={"audio": ("a.wav", f, "audio/wav")})
     assert client.get("/api/impact").json()["children_checked"] == before + 1
+
+
+def test_practise_tonight_marks_words_without_changing_the_level(client):
+    """After the final level, the child reads tonight's practice card and every word is marked again
+    (Hindi reading practice). Practice never changes the level and is counted separately."""
+    s = start(client)
+    sid = s["session_id"]
+    with open(FIX / "story-30.wav", "rb") as f:   # practice is refused before the check is finished
+        r = client.post("/api/practice", data={"session_id": sid}, files={"audio": ("p.wav", f, "audio/wav")})
+    assert r.status_code == 409
+    read(client, sid, "paragraph", "paragraph-18.wav")
+    final = read(client, sid, "story", "paragraph-18.wav")            # story fails -> final paragraph
+    assert final["final_level"] == "paragraph"
+    before = client.get("/api/impact").json()["practice_readings"]
+    card = client.get(f"/api/practice/{sid}").json()
+    assert card["items"] and card["level"] in ("letter", "word", "paragraph", "story")
+    with open(FIX / "story-30.wav", "rb") as f:
+        p = client.post("/api/practice", data={"session_id": sid}, files={"audio": ("p.wav", f, "audio/wav")})
+    assert p.status_code == 200, p.text
+    d = p.json()
+    shown = card["items"] if isinstance(card["items"], list) else card["items"].replace("।", " ").split()
+    assert [w["text"] for w in d["words"]] == shown and d["attempt"] == 1
+    assert client.get(f"/api/session/{sid}").json()["final_level"] == "paragraph"
+    assert client.get("/api/impact").json()["practice_readings"] == before + 1

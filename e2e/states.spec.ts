@@ -4,6 +4,9 @@ import { test, expect } from "@playwright/test";
 // Previews show example data and say so on screen; they never call the speech model or write data.
 const PARENT: Record<string, string> = {
   start: "#begin",
+  setup: "#consent",
+  practise: "#p-rec",
+  "practise-result": "#p-marked span.bad",
   read: "#rec",
   recording: "#rec.on",
   checking: "#rec-status",

@@ -25,9 +25,12 @@ test("parent checks a child's reading level", async ({ page }) => {
   await micPlays(page, "paragraph-18.wav");
   await page.goto("/?set=A");                       // the fake microphone reads card set A
   await expect(page.getByRole("heading", { name: /Kahani Tak/ })).toBeVisible();
-  await expect(page.locator("#begin")).toBeDisabled();
+  await page.locator("#begin").click();                // Start, the one button under the headline
+  await expect(page.locator("#setup")).toBeVisible();
+  await page.locator("#go").click();                   // consent not ticked: nothing starts
+  await expect(page.locator("#setup")).toBeVisible();
   await page.locator("#consent").check();
-  await page.locator("#begin").click();
+  await page.locator("#go").click();
   await expect(page.locator("#card")).toContainText("रानी");
   await page.locator("#rec").click();
   await page.waitForTimeout(8000);                    // clip is ~6.5 s
@@ -42,6 +45,16 @@ test("parent checks a child's reading level", async ({ page }) => {
   await expect(page.locator("#final-line")).toContainText("अनुच्छेद तक", { timeout: 90_000 });
   await expect(page.locator("#ladder li.here")).toHaveText("अनुच्छेद");
   await expect(page.locator("#practice h3")).toContainText("आज रात 5 मिनट");
+  // practise tonight: the child reads the practice card and every word is marked again
+  await page.locator("#practise-now").click();
+  await expect(page.locator("#p-card")).not.toBeEmpty();
+  await page.locator("#p-rec").click();
+  await page.waitForTimeout(8000);
+  await page.locator("#p-rec").click();
+  await expect(page.locator("#p-marked span").first()).toBeVisible({ timeout: 90_000 });
+  await expect(page.locator("#p-verdict")).not.toBeEmpty();
+  await page.locator("#p-done").click();
+  await expect(page.locator("#final-line")).toContainText("अनुच्छेद तक");
 });
 
 // Teacher confirms an unsure reading; the parent's session updates.
