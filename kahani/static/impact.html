@@ -1,1 +1,28 @@
-<!doctype html><title>Kahani Tak</title>
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kahani Tak — अब तक</title><link rel="stylesheet" href="/static/app.css"></head>
+<body><main>
+<h1>Kahani Tak <span class="hi">अब तक / so far</span></h1>
+<p class="lead">ये संख्याएँ सीधे डेटाबेस से आती हैं, हर बार पेज खुलने पर। These numbers come straight from the live database.</p>
+<div class="grid" id="grid"></div>
+<h3>बच्चे किस सीढ़ी पर हैं / Reading level reached</h3>
+<table id="levels"></table>
+<p class="small" id="updated"></p>
+<p class="small">Teacher agreement = share of teacher-checked readings where the teacher's pass/fail matched the speech model's. Audio is deleted after checking or within 7 days; no child names are stored.</p>
+</main>
+<script>
+(async () => {
+  const d = await (await fetch("/api/impact")).json();
+  const cells = [["बच्चों की जाँच / children checked", d.children_checked], ["पूरी जाँच / checks finished", d.checks_finished],
+    ["रिकॉर्डिंग / readings", d.readings], ["टीचर ने जाँचा / teacher-checked", d.teacher_checked],
+    ["टीचर सहमत / teacher agreed", d.teacher_checked ? Math.round(100 * d.teacher_agreed / d.teacher_checked) + "%" : "—"],
+    ["दोबारा जाँच / children re-checked", d.rechecked_children], ["कक्षाएँ / teachers", d.teachers]];
+  const g = document.getElementById("grid");
+  for (const [k, v] of cells) { const c = document.createElement("div"); c.innerHTML = `<div class="num"></div><div class="small"></div>`; c.children[0].textContent = v; c.children[1].textContent = k; g.append(c); }
+  const names = { beginner: "अक्षर से पहले / below letter", letter: "अक्षर / letter", word: "शब्द / word", paragraph: "अनुच्छेद / paragraph", story: "कहानी / story" };
+  const t = document.getElementById("levels");
+  for (const k of ["beginner", "letter", "word", "paragraph", "story"]) { const r = t.insertRow(); r.insertCell().textContent = names[k]; r.insertCell().textContent = d.levels[k]; }
+  document.getElementById("updated").textContent = "Updated " + d.updated + " UTC";
+})();
+</script>
+</body></html>

@@ -1,1 +1,59 @@
-<!doctype html><title>Kahani Tak</title>
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kahani Tak — बच्चा कहाँ तक पढ़ पाता है</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main id="app">
+  <header>
+    <h1>Kahani Tak <span class="hi">कहानी तक</span></h1>
+    <p class="lead">आपका बच्चा एक कार्ड ज़ोर से पढ़े। एक मिनट में जानिए वह कहाँ तक पढ़ पाता है, और आज रात 5 मिनट क्या पढ़ाएँ।</p>
+  </header>
+
+  <section id="start" class="screen">
+    <label class="field">बच्चा किस कक्षा में है?
+      <select id="klass" aria-label="कक्षा">
+        <option value="1">कक्षा 1</option><option value="2">कक्षा 2</option><option value="3" selected>कक्षा 3</option>
+        <option value="4">कक्षा 4</option><option value="5">कक्षा 5</option>
+      </select>
+    </label>
+    <p id="teacher-note" class="note" hidden></p>
+    <label class="check"><input type="checkbox" id="consent"> मैं इस बच्चे का माता/पिता/अभिभावक हूँ और 18 साल से बड़ा/बड़ी हूँ। मैं बच्चे की आवाज़ जाँच के लिए भेजने की अनुमति देता/देती हूँ।</label>
+    <button id="begin" class="big" disabled>शुरू करें</button>
+    <ul class="small">
+      <li>हिंदी, कक्षा 1 से 5 के बच्चों के लिए</li>
+      <li>बच्चे का नाम नहीं माँगते। आवाज़ जाँच के बाद मिटा दी जाती है (ज़्यादा से ज़्यादा 7 दिन में)।</li>
+      <li>जाँच ASER के तरीके से: अनुच्छेद से शुरू, फिर कहानी या शब्द।</li>
+    </ul>
+  </section>
+
+  <section id="read" class="screen" hidden>
+    <p class="step" id="step-label"></p>
+    <div id="card" class="card" lang="hi"></div>
+    <button id="rec" class="mic" aria-label="रिकॉर्ड करें">🎤 बच्चे से पढ़वाइए</button>
+    <p id="rec-status" class="status" aria-live="polite"></p>
+    <p id="error" class="error" role="alert" hidden></p>
+  </section>
+
+  <section id="result" class="screen" hidden>
+    <div id="marked" class="card marked" lang="hi"></div>
+    <p id="verdict" class="verdict"></p>
+    <button id="next" class="big" hidden>अगला कार्ड</button>
+  </section>
+
+  <section id="final" class="screen" hidden>
+    <h2 id="final-line"></h2>
+    <ol id="ladder" class="ladder"></ol>
+    <p id="teacher-status" class="note" hidden></p>
+    <div id="practice" class="practice"></div>
+    <button id="speak" class="secondary" hidden>🔊 सुनिए</button>
+    <button id="again" class="secondary">दूसरे बच्चे की जाँच करें</button>
+    <p class="small"><a href="/impact">अब तक कितने बच्चों की जाँच हुई</a></p>
+  </section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

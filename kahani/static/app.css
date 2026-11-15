@@ -1,0 +1,33 @@
+/* Plain, readable, phone-first. Visual design comes later (design stage). */
+:root { --ok: #1b7f3b; --bad: #c62828; --ink: #1d1d1f; --muted: #5f6368; --line: #dadce0; --bg: #ffffff; --soft: #f5f5f7; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 18px/1.5 system-ui, -apple-system, "Noto Sans Devanagari", sans-serif; color: var(--ink); background: var(--bg); }
+main { max-width: 640px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 28px; margin: 8px 0 4px; } h1 .hi { font-weight: 400; color: var(--muted); font-size: 22px; }
+.lead { font-size: 19px; margin: 0 0 16px; }
+.field, .check { display: block; margin: 14px 0; }
+select { display: block; width: 100%; margin-top: 6px; font-size: 18px; padding: 10px; }
+.check input { width: 22px; height: 22px; vertical-align: middle; margin-right: 6px; }
+button { font: inherit; cursor: pointer; border-radius: 12px; border: 1px solid var(--line); padding: 12px 16px; background: var(--soft); }
+button.big, button.mic { display: block; width: 100%; font-size: 21px; padding: 16px; background: var(--ink); color: #fff; border: 0; }
+button:disabled { opacity: .45; cursor: default; }
+button.mic.on { background: var(--bad); }
+button.secondary { display: block; width: 100%; margin-top: 10px; }
+.small { font-size: 15px; color: var(--muted); padding-left: 18px; }
+.note { background: var(--soft); padding: 10px 12px; border-radius: 10px; }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 14px 0; font-size: 26px; line-height: 1.7; }
+.card p { margin: 0 0 6px; }
+.card.items { display: flex; flex-wrap: wrap; gap: 14px 22px; font-size: 34px; }
+.marked span.ok { color: var(--ok); } .marked span.bad { color: var(--bad); text-decoration: underline wavy; }
+.step { font-size: 20px; font-weight: 600; margin: 4px 0; }
+.status { color: var(--muted); } .error { color: var(--bad); font-weight: 600; }
+.verdict { font-size: 20px; }
+.ladder { list-style: none; padding: 0; display: flex; gap: 6px; }
+.ladder li { flex: 1; text-align: center; padding: 10px 4px; border-radius: 10px; background: var(--soft); color: var(--muted); font-size: 16px; }
+.ladder li.reached { background: #e6f4ea; color: var(--ok); } .ladder li.here { background: var(--ok); color: #fff; font-weight: 700; }
+.practice h3 { margin: 18px 0 4px; }
+table { width: 100%; border-collapse: collapse; } td, th { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+.num { font-size: 34px; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.grid div { background: var(--soft); border-radius: 12px; padding: 12px; }
+.tap span { cursor: pointer; padding: 2px 3px; border-radius: 6px; }

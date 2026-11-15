@@ -1,1 +1,60 @@
-<!doctype html><title>Kahani Tak</title>
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kahani Tak — टीचर</title><link rel="stylesheet" href="/static/app.css"></head>
+<body><main>
+<h1>Kahani Tak <span class="hi">टीचर</span></h1>
+<section id="make" hidden>
+  <p class="lead">अपनी कक्षा का कोड बनाइए। माता-पिता इस कोड वाले लिंक से जाँच करेंगे, और जिन जाँचों पर मशीन पक्की नहीं है, वे आपके पास आएँगी।</p>
+  <label class="field">कक्षा का नाम <input id="cname" placeholder="जैसे: कक्षा 3, सरकारी स्कूल रामपुर" style="width:100%;font-size:18px;padding:10px"></label>
+  <button id="create" class="big">कोड बनाइए</button>
+</section>
+<section id="queue" hidden>
+  <p class="note">माता-पिता को यह लिंक भेजें: <b id="share"></b> <button id="copy">कॉपी</button></p>
+  <p id="counts"></p>
+  <div id="items"></div>
+  <p class="small">हर जाँच में लाल शब्द मशीन ने गलत माने। सुनकर जो शब्द सच में गलत/छूटे हों, उन्हें दबाकर लाल करें, बाकी हरे रखें, फिर "पक्का करें" दबाएँ। आपकी जाँच के बाद रिकॉर्डिंग मिटा दी जाती है।</p>
+</section>
+</main>
+<script>
+const code = (location.pathname.split("/")[2] || "").toUpperCase();
+const HI = { letter: "अक्षर", word: "शब्द", paragraph: "अनुच्छेद", story: "कहानी" };
+const el = (t, a = {}, txt) => { const e = document.createElement(t); Object.assign(e, a); if (txt != null) e.textContent = txt; return e; };
+if (!code) { document.getElementById("make").hidden = false; }
+document.getElementById("create").onclick = async () => {
+  const name = document.getElementById("cname").value.trim() || "मेरी कक्षा";
+  const r = await fetch("/api/teacher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+  const t = await r.json(); location.href = "/teacher/" + t.code;
+};
+async function load() {
+  const r = await fetch(`/api/teacher/${code}/queue`);
+  if (!r.ok) { document.body.querySelector("main").append(el("p", { className: "error" }, "यह कोड नहीं मिला।")); return; }
+  const q = await r.json();
+  const link = location.origin + "/?t=" + code;
+  document.getElementById("queue").hidden = false;
+  document.getElementById("share").textContent = link;
+  document.getElementById("copy").onclick = () => navigator.clipboard && navigator.clipboard.writeText(link);
+  document.getElementById("counts").textContent = `${q.name}: ${q.items.length} जाँच आपकी राह देख रही हैं।`;
+  const box = document.getElementById("items"); box.innerHTML = "";
+  for (const it of q.items) {
+    const d = el("div", { className: "card tap" });
+    d.append(el("div", { className: "small" }, `कक्षा ${it.klass} · ${HI[it.level]} · मशीन: ${it.mistakes} गलत, ${it.passed ? "पास" : "पास नहीं"}`));
+    const words = el("div", { className: "marked" });
+    const wrong = new Set(it.words.map((w, i) => (w.ok ? -1 : i)).filter((i) => i >= 0));
+    it.words.forEach((w, i) => {
+      const s = el("span", { className: w.ok ? "ok" : "bad" }, w.text);
+      s.onclick = () => { wrong.has(i) ? wrong.delete(i) : wrong.add(i); s.className = wrong.has(i) ? "bad" : "ok"; };
+      words.append(s, " ");
+    });
+    const audio = el("audio", { controls: true, preload: "none", src: `/api/teacher/${code}/audio/${it.reading_id}` });
+    const ok = el("button", { className: "big" }, "पक्का करें");
+    ok.onclick = async () => {
+      ok.disabled = true;
+      const r = await fetch(`/api/teacher/${code}/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reading_id: it.reading_id, wrong: [...wrong] }) });
+      if (r.ok) { d.replaceChildren(el("p", {}, "✅ पक्का हो गया। माता-पिता के फ़ोन पर बदल जाएगा।")); } else { ok.disabled = false; }
+    };
+    d.append(words, audio, ok); box.append(d);
+  }
+}
+if (code) { load(); setInterval(() => { if (!document.querySelector("audio:not([paused])")) load(); }, 30000); }
+</script>
+</body></html>
