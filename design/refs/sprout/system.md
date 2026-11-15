@@ -1,0 +1,6 @@
+# Sprout system (direction C)
+Type: BrickDisplayPro 104/400 lh 0.9 -> Gloock (specimen: closest contrast and width; Young Serif too round, Fraunces reads as AI); Suisse Int'l 24 body / 18 UI -> Inter Tight (fonts.md match). Devanagari: Rozha One display, Hind text. Sizes 104 / 24 / 18.
+Colour: hero #f3d468 mustard (exact), lower bands #fef9f3 / #fcf6f1 / #fceee5, coral band #f39369, ink and buttons #3e0808 brown, announcement bar #3e0808 with #f3d468 accent text.
+Shape: 15px windows with 1px brown border, 20px buttons; window title bar solid brown with three coloured dots; window body on fine grid paper.
+First screen slot by slot -> ours: brown announcement bar with news -> "नया: टीचर अब सुनकर पक्का करती हैं" style real news is not in the brief, so we use the brief's privacy line; logo left, 3 links, brown filled button -> logo, 3 links, "शुरू करें"; floating round photo stickers -> our two generated stickers (slate, lamp), no people; headline 2 lines, 4 words, 104px centred -> "कहानी तक" (2 words); text 2 lines ~16 words, 24px medium -> the brief's Hindi line; window 960 wide with brown bar and grid body -> our example result window.
+Sections: 02 cream band "Pull up a chair" (heading + text + small visual) -> our "how it works".

@@ -49,6 +49,8 @@ def db():
         heard text, words text, mistakes int, total int, passed int, needs_teacher int, audio text,
         audio_secs real, model_secs real, teacher_words text, teacher_passed int, confirmed_at text);
     """)
+    con.execute("create table if not exists practice(id text primary key, session_id text, created text, level text, "
+                "words text, mistakes int, total int)")
     if "key_hash" not in [r[1] for r in con.execute("pragma table_info(teachers)")]:
         con.execute("alter table teachers add column key_hash text")
     if "is_test" not in [r[1] for r in con.execute("pragma table_info(sessions)")]:
@@ -78,9 +80,24 @@ def page(name):
     return HTMLResponse((HERE / "static" / name).read_text(encoding="utf-8"))
 
 
+EXAMPLE_LINE = ("{n} शब्द छूटे (हाइलाइट)। ASER के नियम से 3 तक गलती पर अनुच्छेद पास, पर गिनती सीमा के पास है, "
+                "इसलिए टीचर सुनकर पक्का करेंगी।")
+
+
 @app.get("/")
 def parent_page():
-    return page("index.html")
+    """The first screen carries the example result inline (real model output on a synthetic voice)."""
+    import html
+    html_text = (HERE / "static" / "index.html").read_text(encoding="utf-8")
+    ex = json.loads((HERE / "static" / "example.json").read_text(encoding="utf-8"))
+    spans = " ".join(f'<span class="{"ok" if w["ok"] else "bad"}">{html.escape(w["text"])}</span>' for w in ex["words"])
+    html_text = html_text.replace('<figure id="example" class="ui-window ui-frame example" hidden>',
+                                  '<figure id="example" class="ui-window ui-frame example" data-filled="1">', 1)
+    html_text = html_text.replace('<div class="card marked kt-mark" lang="hi"></div>',
+                                  f'<div class="card marked kt-mark" lang="hi">{spans}</div>', 1)
+    html_text = html_text.replace('<p class="small" id="example-line"></p>',
+                                  f'<p class="small" id="example-line">{EXAMPLE_LINE.format(n=ex["mistakes"])}</p>', 1)
+    return HTMLResponse(html_text)
 
 
 @app.get("/teacher")
@@ -231,6 +248,50 @@ async def read(session_id: str = Form(...), level: str = Form(...), audio: Uploa
             "passed": result["passed"], "needs_teacher": unsure, "heard": heard,
             "next_level": st["next_level"], "next_card": st["next_card"], "final_level": st["final_level"],
             "practice": st["practice"], "teacher_linked": st["teacher_linked"]}
+
+
+PRACTICE_LEVEL = {"अक्षर": "letter", "शब्द": "word", "वाक्य": "paragraph", "कहानी": "story"}
+
+
+def practice_card(con, sid):
+    st = session_state(con, sid)
+    if not st["final_level"]:
+        raise HTTPException(409, "finish the check first")
+    p = st["practice"]
+    return {"level": PRACTICE_LEVEL[p["focus"]], "items": p["items"], "how": p["how"], "focus": p["focus"]}
+
+
+@app.get("/api/practice/{sid}")
+def get_practice(sid: str):
+    return practice_card(db(), sid)
+
+
+@app.post("/api/practice")
+async def practise(session_id: str = Form(...), audio: UploadFile = File(...)):
+    """Tonight's practice: the child reads the practice card and every word is marked again.
+    It never changes the child's level; the recording is not kept."""
+    con = db()
+    card = practice_card(con, session_id)
+    blob = await audio.read()
+    if not blob or len(blob) > MAX_AUDIO_BYTES:
+        raise HTTPException(413, "recording too large or empty")
+    with tempfile.NamedTemporaryFile(suffix=".audio") as f:
+        f.write(blob); f.flush()
+        try:
+            from kahani.asr import decode_audio
+            heard, _ = app.state.transcriber.transcribe(decode_audio(f.name))
+            result = scoring.score_reading(card["level"], card["items"], heard)
+        except scoring.NothingHeard:
+            raise HTTPException(422, {"code": "nothing_heard", "message": "आवाज़ साफ़ नहीं आई"})
+        except Exception as e:
+            raise HTTPException(422, {"code": "bad_audio", "message": str(e)[:200]})
+    with _lock, con:
+        con.execute("insert into practice values(?,?,?,?,?,?,?)", (secrets.token_urlsafe(10), session_id, now(), card["level"],
+                    json.dumps(result["words"], ensure_ascii=False), result["mistakes"], result["total"]))
+    _wrote()
+    attempts = con.execute("select mistakes from practice where session_id=? order by created, rowid", (session_id,)).fetchall()
+    return {"words": result["words"], "mistakes": result["mistakes"], "total": result["total"], "attempt": len(attempts),
+            "previous_mistakes": [a[0] for a in attempts[:-1]]}
 
 
 @app.get("/api/session/{sid}")
@@ -391,6 +452,7 @@ def impact():
             "rechecked_children": one("select count(*) from (select child_key from sessions where is_test=0 and id in "
                                       "(select session_id from readings) group by child_key having count(*)>1)"),
             "teachers": one("select count(distinct teacher_code) from sessions where is_test=0 and teacher_code is not null"),
+            "practice_readings": one("select count(*) from practice p join sessions s on s.id=p.session_id where s.is_test=0"),
             "median_model_secs": one(f"select model_secs from {R} order by model_secs limit 1 offset "
                                      f"(select count(*)/2 from {R})") if one(f"select count(*) from {R}") else None,
             "updated": now()}

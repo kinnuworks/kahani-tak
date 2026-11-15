@@ -1,8 +1,8 @@
 # Kahani Tak
 
-A parent's phone listens to a child read one Hindi card aloud, marks every word right or wrong, and says which ASER reading level the child reached and what to practise tonight. Results the machine isn't sure of go to the child's teacher, who listens and confirms.
+A parent's phone listens to a child read one Hindi card aloud, marks every word right or wrong, and says which ASER reading level the child reached (letter, word, paragraph or story, the scale India's ASER survey uses) and what to practise tonight. Results the machine isn't sure of go to the child's teacher, who listens and confirms.
 
-It needs agentic AI because the checking runs as a chain of decisions: a speech model that writes down what the child actually said (AI4Bharat IndicConformer, not an LLM, which would quietly correct a misread word), code that applies ASER's rules and picks the next card, and a class-planner agent, built and evaluated in AgentFoundry (the hackathon's agent IDE), that reads a class's confirmed levels through its tools and writes tomorrow's level-wise groups and activities for the teacher.
+Scoring is deliberately not left to a language model. It runs as a chain of decisions: a speech model that writes down what the child actually said (AI4Bharat IndicConformer, not an LLM, which would quietly correct a misread word), code that applies ASER's rules and picks the next card, and a class-planner agent, built and evaluated in AgentFoundry (the agent-building IDE this hackathon requires), that reads a class's confirmed levels through its tools and writes tomorrow's level-wise groups and activities for the teacher.
 
 ![A parent's phone: the child reads a paragraph, words are marked, the story card follows, the level lights up on the ladder and tonight's practice appears](docs/core-loop.gif)
 <sub>Recorded by our automated browser test with a synthetic voice. No child's voice is published.</sub>
@@ -17,7 +17,7 @@ It needs agentic AI because the checking runs as a chain of decisions: a speech 
 ### Try it in 30 seconds
 1. Open the live app on a phone, tick the consent box, tap **शुरू करें** (Start).
 2. Tap the mic and read the paragraph aloud (or have a child read it). Tap again when done.
-3. See each word in green or red, then the next card. After one or two cards you get the level and tonight's 5-minute practice.
+3. See each word marked (missed words highlighted), then the next card. After one or two cards you get the level on a ladder and tonight's practice; tap **अभी अभ्यास करें** (Practise now) and the child reads the practice card with every word marked again.
 4. Teacher side, with a demo class of synthetic voices: [open the demo teacher page](https://kinnuworks--kahani-tak-web.us-east.modal.run/teacher/UYPCDN#k=YjTPqrg3hP7WoPFbX1Y0wxSdaG3ZEfVKTUVzG3dp2NY). Play a reading, tap a word, confirm, or press **कल की योजना बनाइए** to have the agent plan tomorrow.
 
 ---

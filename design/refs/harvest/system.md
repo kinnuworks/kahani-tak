@@ -1,0 +1,9 @@
+# Harvest system (direction A)
+Type: display Besley 70/400, lh 1.1, tracking -0.04em (we use -0.02em: Devanagari breaks at tighter tracking); headings Besley 50; body Muoto 16-19 -> free match Hanken Grotesk (Muoto not in fonts.md; humanist-ish grotesk at the same width). Devanagari: Tiro Devanagari Hindi for serif display, Mukta for text. Three sizes on the first screen: 70 / 19 / 15.
+Colour: page #fbf5f0 (exact), surfaces #ffffff and #f3ebe4, ink #1d1e1c, muted #626262, lines rgba(29,29,29,.1); accents #fa5d00 (underline, highlight strip), #fea986 (highlighted row), #fb9569 coral, #23a40c green (marks "read right").
+Space: container 1256, gaps 24/40, nav 93 tall floating white pill.
+Shape: pill buttons, 20px cards, 16px window, soft two-layer shadow on the product panel.
+Components: primary pill black #1d1e1c 56 tall; secondary outline pill 1px black; input pill-shaped field joined to the button.
+First screen slot by slot -> ours: floating white pill header (logo, 4 links, "Log in", outline button, black button) -> logo, 3 links, outline "टीचर के लिए", black "शुरू करें"; no pill; headline 3 lines 4 words with orange hand-drawn underline under the last word -> "कहानी तक" + underline; text 3 lines ~16 words -> the brief's Hindi line; email field + button -> class select + start (consent above); small print with 3 orange ticks -> the brief's three promises (no names / voice deleted in 7 days / ASER method); main visual: white panel with orange left strip, one highlighted row and a hand cursor -> the example result window, missed words in the peach highlight. No backdrop.
+Sections: 01 white band, heading + four icon columns -> our "how it works" as three columns. 02-06 (product feature splits, integrations, testimonials, CTA) -> not used: the brief has no content for them.
+Decoration: hand-drawn orange underline (SVG/CSS), no imagery needed on the first screen.

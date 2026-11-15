@@ -15,7 +15,8 @@ cd "$(dirname "$0")"
 (cd e2e && npx playwright test)
 if [ -n "${LIVE_URL:-}" ]; then
   curl -fsS --max-time 120 "$LIVE_URL/healthz" | grep -q '"model_loaded":true' || { echo "live app not healthy: $LIVE_URL"; exit 1; }
-  (cd e2e && BASE_URL="$LIVE_URL" npx playwright test)
+  # live: the demo path only (parent loop + teacher confirm); the ?state= previews ran locally above
+  (cd e2e && BASE_URL="$LIVE_URL" npx playwright test demo-path.spec.ts)
   # the agent answers the way AgentFoundry invokes it (manifest invocationUrl + header auth)
   .venv/bin/python scripts/af_invoke.py
   echo "live app OK: $LIVE_URL"

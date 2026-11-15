@@ -1,0 +1,55 @@
+/* Theme: built on Harvest's measured system (design/refs/harvest/system.md). */
+:root {
+  --paper: #fbf5f0; --sheet: #ffffff; --sheet-2: #f3ebe4;
+  --ink: #1d1e1c; --ink-2: #2c222d; --ink-3: #626262;
+  --rule: rgba(29, 29, 29, .1); --rule-strong: #8b8b8b;
+  --act: #fa5d00; --on-act: #ffffff; --act-ink: #b84500; --focus: #fa5d00; --mark: #fea986; --on-mark: #1d1e1c;
+  --ok: #1d1e1c; --bad: #1d1e1c; --ok-bg: #f3ebe4; --bad-bg: #fea986;
+  --btn-bg: #1d1e1c; --btn-fg: #ffffff; --btn-border: #1d1e1c; --btn-radius: 999px; --h-control: 56px; --pad-control: 24px; --shadow-btn: none;
+  --ghost-bg: transparent; --ghost-fg: #1d1e1c; --ghost-border: #000000; --shadow-ghost: none;
+  --r-card: 20px; --r-window: 16px; --r-control: 16px; --card-edge: transparent; --border-w: 0px;
+  --shadow-card: none; --shadow-window: none;
+  --font-display: "Besley", "Tiro Devanagari Hindi", Georgia, serif; --weight-display: 400; --track-display: -0.02em; --lh-display: 1.1;
+  --font-heading: "Besley", "Tiro Devanagari Hindi", Georgia, serif; --weight-heading: 400; --track-heading: -0.02em; --lh-heading: 1.15;
+  --font-body: "Hanken Grotesk", "Mukta", system-ui, sans-serif; --font-ui: "Hanken Grotesk", "Mukta", system-ui, sans-serif; --weight-body: 400;
+  --fs-display: clamp(44px, calc(44px + 26 * ((100vw - 375px) / 1065)), 70px);
+  --fs-h2: clamp(32px, calc(32px + 18 * ((100vw - 375px) / 1065)), 50px);
+  --fs-body: 16px; --fs-lead: 18px; --fs-small: 15px; --lh-body: 1.5;
+  --page-max: 1256px; --dots: 0; --chrome-bg: #ffffff; --chrome-fg: #626262;
+}
+.kt-top { background: var(--paper); }
+.kt-header { background: #fff; border-radius: 999px; box-shadow: 0 4px 16px rgba(0,0,0,.06); padding: 14px 18px 14px 28px; margin-top: 14px; max-width: 900px; }
+.kt-header-btn { display: inline-flex; min-height: 49px; }
+.ui-hero { grid-template-columns: minmax(0, 520px) minmax(0, 720px); justify-content: space-between; align-items: start; padding-block: 56px 72px; }
+.kt-title { text-align: center; }
+.kt-lead, .kt-en { text-align: center; }
+.accent-line { position: relative; display: inline-block; }
+.accent-line::after { content: ""; position: absolute; left: -4%; right: -4%; bottom: -0.02em; height: 0.16em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 12' preserveAspectRatio='none'%3E%3Cpath d='M2 8 C 50 2, 120 12, 198 5' fill='none' stroke='%23fa5d00' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.ui-window { background: #fff; border-left: 22px solid #fb9569; }
+.kt-mark span.bad,
+.kt-key-bad { background: var(--bad-bg); color: var(--on-mark); border-radius: 8px; padding: 0 6px; }
+.kt-ticks { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; list-style: none; padding: 0; margin: 0; font-size: 15px; color: var(--ink-3); }
+.kt-ticks li::before { content: "✓"; color: var(--act); margin-right: 6px; }
+.kt-how { background: #fff; max-width: none; padding: 100px 16px; }
+.kt-how ul { max-width: 1256px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; list-style: none; padding: 0; color: var(--ink-2); font-size: 19px; }
+.kt-how__title { max-width: 1256px; margin: 0 auto 40px; font-family: var(--font-heading); font-weight: 400; font-size: var(--fs-h2); color: var(--ink); }
+
+
+.kt-header-btn { display: inline-flex; min-height: 49px; }
+.kt-logo { font-size: 18px; } .kt-logo span { font-size: 15px; } .kt-nav { font-size: 16px; }
+.en-inline { opacity: 1; }
+
+.ui-hero { min-height: 0; }
+@media (max-width: 760px) {
+  .ui-hero { grid-template-columns: 1fr; }
+  .kt-nav { display: none; }
+  .kt-header { flex-wrap: nowrap; padding: 10px 10px 10px 20px; }
+  .kt-header-btn { min-height: 44px; }
+  .ui-hero__copy { display: contents; }
+  .kt-title, .kt-lead { order: 1; }
+  .ui-hero__stage { order: 2; }
+  .kt-begin { order: 3; width: 100%; }
+  .kt-ticks { order: 4; }
+  .kt-header { border-radius: 24px; margin-inline: 12px; }
+  .kt-how ul { grid-template-columns: 1fr; }
+}

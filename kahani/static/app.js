@@ -35,13 +35,15 @@ function renderCard(el, c) {
 function err(msg) { const e = $("error"); e.textContent = msg; e.hidden = !msg; }
 
 if (teacherCode) { $("teacher-note").hidden = false; $("teacher-note").textContent = "आपके बच्चे की टीचर इस जाँच को देख सकेंगी (कोड " + teacherCode.toUpperCase() + ")।"; }
-$("consent").addEventListener("change", () => { $("begin").disabled = !$("consent").checked; });
+$("consent").addEventListener("change", () => { $("consent").closest("label").classList.remove("kt-need"); });
 
-$("begin").addEventListener("click", async () => {
-  $("begin").disabled = true;
+$("begin").addEventListener("click", () => show("setup"));
+$("go").addEventListener("click", async () => {
+  if (!$("consent").checked) { const l = $("consent").closest("label"); l.classList.add("kt-need"); l.scrollIntoView({ block: "center" }); $("consent").focus(); return; }
+  $("go").disabled = true;
   const r = await fetch("/api/session", { method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ klass: +$("klass").value, consent: true, child_key: childKey, teacher_code: teacherCode, set_id: cardSet }) });
-  $("begin").disabled = false;
+  $("go").disabled = false;
   if (!r.ok) { alert("शुरू नहीं हो पाया, फिर कोशिश करें।"); return; }
   session = await r.json();
   goRead(session.level, session.card);
@@ -114,6 +116,7 @@ function showFinal(d) {
   const how = document.createElement("p"); how.textContent = p.how; pr.appendChild(how);
   const c = document.createElement("div"); c.className = "card"; renderCard(c, p.items); pr.appendChild(c);
   $("speak").hidden = !("speechSynthesis" in window);
+  $("practise-now").hidden = !session;
   show("final");
   watchTeacher();
 }
@@ -140,13 +143,13 @@ $("speak").addEventListener("click", () => {
   const u = new SpeechSynthesisUtterance($("final-line").textContent + "। " + $("practice").querySelector("p").textContent);
   u.lang = "hi-IN"; speechSynthesis.cancel(); speechSynthesis.speak(u);
 });
-$("again").addEventListener("click", () => { childKey = newKey(); clearInterval(pollTimer); session = null; $("consent").checked = false; $("begin").disabled = true; show("start"); });
+$("again").addEventListener("click", () => { childKey = newKey(); clearInterval(pollTimer); session = null; $("consent").checked = false; show("start"); });
 
 // ---------- first-screen example: a real result of this app on a synthetic voice ----------
-fetch("/static/example.json").then((r) => r.json()).then((ex) => {
+if (!$("example").dataset.filled) fetch("/static/example.json").then((r) => r.json()).then((ex) => {
   const box = $("example"), m = box.querySelector(".marked");
   ex.words.forEach((w) => { const sp = document.createElement("span"); sp.textContent = w.text; sp.className = w.ok ? "ok" : "bad"; m.append(sp, " "); });
-  $("example-line").textContent = ex.mistakes + " शब्द छूटे (लाल)। ASER के नियम से 3 तक गलती पर अनुच्छेद पास, पर गिनती सीमा के पास है, इसलिए टीचर सुनकर पक्का करेंगी।";
+  $("example-line").textContent = ex.mistakes + " शब्द छूटे (हाइलाइट)। ASER के नियम से 3 तक गलती पर अनुच्छेद पास, पर गिनती सीमा के पास है, इसलिए टीचर सुनकर पक्का करेंगी।";
   box.hidden = false;
 }).catch(() => { /* example is optional; the check still works */ });
 
@@ -160,6 +163,9 @@ async function preview(state) {
   const statusLine = (txt) => { $("teacher-status").hidden = false; $("teacher-status").textContent = txt; };
   const views = {
     start: () => show("start"),
+    setup: () => show("setup"),
+    practise: () => { renderCard($("p-card"), d.practice.paragraph.items); $("p-level").textContent = "बच्चा अनुच्छेद तक पढ़ लेता है · अभ्यास: कहानी"; show("practise"); },
+    "practise-result": () => { renderCard($("p-card"), d.practice.paragraph.items); show("practise"); showPractice({ words: d.practice.paragraph.items.replace(/।/g, " ").split(/\s+/).filter(Boolean).map((t, i) => ({ text: t, ok: i % 9 !== 4 })), mistakes: 0, previous_mistakes: [] }); $("p-verdict").textContent = "उदाहरण: हाइलाइट शब्द पर फिर से ध्यान दें।"; },
     read: () => goRead("paragraph", c.paragraph),
     recording: () => { goRead("paragraph", c.paragraph); $("rec").textContent = "⏹ पढ़ना हो गया"; $("rec").classList.add("on"); $("rec-status").textContent = "सुन रहे हैं… बच्चा पूरा पढ़ ले, फिर दबाएँ।"; },
     checking: () => { goRead("paragraph", c.paragraph); $("rec").disabled = true; $("rec-status").textContent = "जाँच रहे हैं… (लगभग आधा मिनट)"; },
@@ -176,5 +182,60 @@ async function preview(state) {
   };
   (views[state] || views.start)();
   if (state === "result-pass" || state === "result-teacher") $("next").onclick = null;
+  if (state.startsWith("final")) $("practise-now").hidden = false;
 }
 if (previewState) preview(previewState);
+
+// ---------- practise tonight: the child reads the practice card, every word is marked again ----------
+let pRec = null, pChunks = [];
+function markInto(el, words) {
+  el.innerHTML = "";
+  words.forEach((w) => { const sp = document.createElement("span"); sp.textContent = w.text; sp.className = w.ok ? "ok" : "bad"; el.append(sp, " "); });
+  el.hidden = false;
+}
+$("practise-now").addEventListener("click", async () => {
+  const r = await fetch("/api/practice/" + session.session_id);
+  if (!r.ok) return;
+  const c = await r.json();
+  renderCard($("p-card"), c.items);
+  $("p-level").textContent = $("final-line").textContent + " · अभ्यास: " + c.focus;
+  $("p-listen").hidden = !("speechSynthesis" in window);
+  $("p-marked").hidden = true; $("p-verdict").textContent = ""; $("p-again").hidden = true;
+  $("p-rec").hidden = false; $("p-rec").disabled = false; $("p-rec").textContent = "🎤 बच्चे से पढ़वाइए";
+  $("p-status").textContent = "बटन दबाएँ, बच्चा पढ़े, फिर दोबारा दबाएँ।";
+  show("practise");
+});
+$("p-rec").addEventListener("click", async () => {
+  if (pRec && pRec.state === "recording") { pRec.stop(); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { $("p-status").textContent = MSG.mic; return; }
+  const mime = pickMime();
+  pRec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); pChunks = [];
+  pRec.ondataavailable = (e) => e.data.size && pChunks.push(e.data);
+  pRec.onstop = async () => {
+    stream.getTracks().forEach((t) => t.stop());
+    $("p-rec").disabled = true; $("p-status").textContent = "जाँच रहे हैं…";
+    const blob = new Blob(pChunks, { type: pRec.mimeType || mime || "audio/webm" });
+    const fd = new FormData(); fd.append("session_id", session.session_id); fd.append("audio", blob, "practice.webm");
+    const r = await fetch("/api/practice", { method: "POST", body: fd }).catch(() => null);
+    $("p-rec").disabled = false; $("p-rec").textContent = "🎤 फिर से पढ़वाइए";
+    if (!r || !r.ok) { $("p-status").textContent = r && r.status === 422 ? MSG.nothing : MSG.network; return; }
+    showPractice(await r.json());
+  };
+  pRec.start(); $("p-rec").textContent = "⏹ पढ़ना हो गया"; $("p-status").textContent = "सुन रहे हैं…";
+});
+function showPractice(d) {
+  markInto($("p-marked"), d.words);
+  const prev = d.previous_mistakes && d.previous_mistakes.length ? d.previous_mistakes[d.previous_mistakes.length - 1] : null;
+  $("p-verdict").textContent = (d.mistakes === 0 ? "सब शब्द ठीक पढ़े! " : d.mistakes + " शब्द पर फिर से ध्यान दें (हाइलाइट)। ") +
+    (prev !== null ? "पिछली बार " + prev + " गलती थी, इस बार " + d.mistakes + "।" : "");
+  $("p-status").textContent = ""; $("p-again").hidden = false; $("p-rec").hidden = true;
+}
+$("p-again").addEventListener("click", () => { $("p-rec").hidden = false; $("p-marked").hidden = true; $("p-verdict").textContent = ""; $("p-again").hidden = true; });
+$("p-done").addEventListener("click", () => show("final"));
+
+$("p-listen").addEventListener("click", () => {
+  const u = new SpeechSynthesisUtterance($("p-card").textContent);
+  u.lang = "hi-IN"; u.rate = 0.8; speechSynthesis.cancel(); speechSynthesis.speak(u);
+});

@@ -4,52 +4,97 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kahani Tak — बच्चा कहाँ तक पढ़ पाता है</title>
+<meta name="description" content="A parent's phone listens to a child read one Hindi card aloud, marks every word, and shows the ASER reading level and tonight's practice. Unsure results go to the teacher.">
+<script src="/static/design/runtime.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Besley:wght@400;500&family=Hanken+Grotesk:wght@400;500;600&family=Tiro+Devanagari+Hindi&family=Mukta:wght@400;600&display=swap">
+<link rel="stylesheet" href="/static/design/base.css">
+<link rel="stylesheet" href="/static/design/components.css">
+<link rel="stylesheet" href="/static/design/theme.css">
 <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-<main id="app">
-  <p id="preview-banner" class="note" hidden>Preview: <b id="preview-name"></b>. उदाहरण डेटा, कोई असली जाँच नहीं।</p>
-  <header>
-    <h1>Kahani Tak <span class="hi">कहानी तक</span></h1>
-    <p class="lead">आपका बच्चा एक कार्ड ज़ोर से पढ़े। एक मिनट में जानिए वह कहाँ तक पढ़ पाता है, और आज रात 5 मिनट क्या पढ़ाएँ।</p>
-    <p class="en" lang="en">Your child reads one Hindi card aloud. You see which words were read right, the child's reading level (ASER scale), and a 5-minute practice for tonight. Unsure results go to the teacher.</p>
+<p id="preview-banner" class="note kt-banner" hidden>Preview: <b id="preview-name"></b>. उदाहरण डेटा, कोई असली जाँच नहीं।</p>
+<div class="kt-top">
+  <header class="kt-header ui-page">
+    <a class="kt-logo" href="/">Kahani Tak <span lang="hi">कहानी तक</span></a>
+    <nav class="kt-nav" aria-label="Kahani Tak">
+      <a href="/#how">कैसे जाँचते हैं</a>
+      <a href="/teacher">टीचर के लिए</a>
+      <a href="/impact">अब तक</a>
+    </nav>
+    <a class="ui-btn kt-header-btn" href="/teacher">टीचर <span class="kt-wide">लॉगिन</span></a>
   </header>
 
   <section id="start" class="screen">
-    <label class="field">बच्चा किस कक्षा में है?
-      <select id="klass" aria-label="कक्षा">
-        <option value="1">कक्षा 1</option><option value="2">कक्षा 2</option><option value="3" selected>कक्षा 3</option>
-        <option value="4">कक्षा 4</option><option value="5">कक्षा 5</option>
-      </select>
-    </label>
-    <p id="teacher-note" class="note" hidden></p>
-    <label class="check"><input type="checkbox" id="consent"> मैं इस बच्चे का माता/पिता/अभिभावक हूँ और 18 साल से बड़ा/बड़ी हूँ। मैं बच्चे की आवाज़ जाँच के लिए भेजने की अनुमति देता/देती हूँ। <span class="en" lang="en">(I am the parent or guardian, over 18, and agree to send the reading for checking.)</span></label>
-    <button id="begin" class="big" disabled>शुरू करें <span class="en-inline" lang="en">Start</span></button>
-    <div id="example" class="example" hidden>
-      <p class="example-tag">उदाहरण <span lang="en">· Example result</span></p>
-      <p class="small">ऐसे दिखता है नतीजा। यह कंप्यूटर की आवाज़ (किसी बच्चे की नहीं) से पढ़वाने पर इसी ऐप का असली नतीजा है। <span lang="en">This app's real output on a computer voice, not a child.</span></p>
-      <div class="card marked" lang="hi"></div>
-      <p class="small" id="example-line"></p>
+    <div class="ui-hero ui-page">
+      <div class="ui-hero__copy">
+        <h1 class="kt-title"><span class="kt-title__name" lang="en">Kahani Tak<br></span>बच्चा कहाँ तक पढ़ पाता <span class="accent-line">है?</span></h1>
+        <p class="ui-hero__deck kt-lead">आपका बच्चा एक कार्ड ज़ोर से पढ़े। एक मिनट में जानिए वह कहाँ तक पढ़ पाता है, और आज रात 5 मिनट क्या पढ़ाएँ।</p>
+        <div class="kt-startrow">
+          <select id="klass" aria-label="बच्चा किस कक्षा में है? Child's class">
+            <option value="1">कक्षा 1</option><option value="2">कक्षा 2</option><option value="3" selected>कक्षा 3</option>
+            <option value="4">कक्षा 4</option><option value="5">कक्षा 5</option>
+          </select>
+          <button id="begin" class="ui-btn kt-begin">शुरू करें <span class="en-inline" lang="en">Start</span></button>
+        </div>
+        <ul class="kt-ticks" lang="hi">
+          <li>नाम नहीं माँगते</li><li>आवाज़ 7 दिन में मिटती है</li><li>ASER का तरीका</li>
+        </ul>
+      </div>
+      <div class="ui-hero__stage">
+        <figure id="example" class="ui-window ui-frame example" hidden>
+          <div class="ui-window__bar">
+            <span class="ui-window__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="ui-window__title">उदाहरण · Example result</span>
+          </div>
+          <div class="ui-window__body">
+            <p class="small">कंप्यूटर की आवाज़ पर इसी ऐप का असली नतीजा <span lang="en">· real output, computer voice, not a child</span></p>
+            <div class="card marked kt-mark" lang="hi"></div>
+            <p class="small kt-key"><span class="kt-key-bad">हाइलाइट</span> = छूटा या गलत पढ़ा शब्द <span lang="en">(missed or misread)</span></p>
+            <p class="small" id="example-line"></p>
+          </div>
+        </figure>
+      </div>
     </div>
-    <ul class="small">
-      <li>हिंदी, कक्षा 1 से 5 के बच्चों के लिए</li>
-      <li>बच्चे का नाम नहीं माँगते। आवाज़ जाँच के बाद मिटा दी जाती है (ज़्यादा से ज़्यादा 7 दिन में)।</li>
-      <li>जाँच ASER के तरीके से: अनुच्छेद से शुरू, फिर कहानी या शब्द।</li>
-    </ul>
+    <div class="kt-under ui-page">
+      <p class="kt-en" lang="en">Your child reads one Hindi card aloud. You see which words were read right, the child's reading level (ASER scale), and a 5-minute practice for tonight. Unsure results go to the teacher.</p>
+      <p class="ui-hero__why" lang="en">A speech model hears what the child actually said, so a misread word stays a mistake; code applies ASER's rules, and the teacher checks anything uncertain.</p>
+    </div>
+    <section id="how" class="kt-how" aria-label="कैसे जाँचते हैं">
+      <h2 class="kt-how__title">कैसे जाँचते हैं</h2>
+      <ul>
+        <li>हिंदी, कक्षा 1 से 5 के बच्चों के लिए</li>
+        <li>बच्चे का नाम नहीं माँगते। आवाज़ जाँच के बाद मिटा दी जाती है (ज़्यादा से ज़्यादा 7 दिन में)।</li>
+        <li>जाँच ASER के तरीके से: अनुच्छेद से शुरू, फिर कहानी या शब्द।</li>
+      </ul>
+    </section>
+  </section>
+</div>
+
+<main id="app" class="ui-page">
+  <section id="setup" class="screen" hidden>
+    <h2 class="kt-step-title">एक बात पक्की करें</h2>
+    <div class="kt-startform">
+      <p id="teacher-note" class="note" hidden></p>
+      <label class="check"><input type="checkbox" id="consent"> मैं इस बच्चे का माता/पिता/अभिभावक हूँ और 18 साल से बड़ा/बड़ी हूँ। मैं बच्चे की आवाज़ जाँच के लिए भेजने की अनुमति देता/देती हूँ। <span class="kt-en" lang="en">(I'm the parent or guardian, 18+, and agree to send the reading for checking.)</span></label>
+      <button id="go" class="ui-btn big">आगे बढ़ें <span class="en-inline" lang="en">Continue</span></button>
+    </div>
   </section>
 
   <section id="read" class="screen" hidden>
     <p class="step" id="step-label"></p>
     <div id="card" class="card" lang="hi"></div>
-    <button id="rec" class="mic" aria-label="रिकॉर्ड करें">🎤 बच्चे से पढ़वाइए</button>
+    <button id="rec" class="mic ui-btn big" aria-label="रिकॉर्ड करें">🎤 बच्चे से पढ़वाइए</button>
     <p id="rec-status" class="status" aria-live="polite"></p>
     <p id="error" class="error" role="alert" hidden></p>
   </section>
 
   <section id="result" class="screen" hidden>
-    <div id="marked" class="card marked" lang="hi"></div>
+    <div id="marked" class="card marked kt-mark" lang="hi"></div>
+    <p class="small kt-key"><span class="kt-key-bad">हाइलाइट</span> = छूटा या गलत पढ़ा शब्द <span lang="en">(missed or misread)</span></p>
     <p id="verdict" class="verdict"></p>
-    <button id="next" class="big" hidden>अगला कार्ड</button>
+    <button id="next" class="ui-btn big" hidden>अगला कार्ड</button>
   </section>
 
   <section id="final" class="screen" hidden>
@@ -57,9 +102,23 @@
     <ol id="ladder" class="ladder"></ol>
     <p id="teacher-status" class="note" hidden></p>
     <div id="practice" class="practice"></div>
-    <button id="speak" class="secondary" hidden>🔊 सुनिए</button>
-    <button id="again" class="secondary">दूसरे बच्चे की जाँच करें</button>
+    <button id="practise-now" class="ui-btn big" hidden>अभी अभ्यास करें <span class="en-inline" lang="en">Practise now</span></button>
+    <button id="speak" class="ui-btn ui-btn--ghost secondary" hidden>🔊 सुनिए</button>
+    <button id="again" class="ui-btn ui-btn--ghost secondary">दूसरे बच्चे की जाँच करें</button>
     <p class="small"><a href="/impact">अब तक कितने बच्चों की जाँच हुई</a></p>
+  </section>
+
+  <section id="practise" class="screen" hidden>
+    <p class="kt-p-level" id="p-level"></p>
+    <button id="p-listen" class="ui-btn big kt-listen">🔊 पहले सुनिए, फिर बच्चा पढ़े <span class="en-inline" lang="en">Listen first</span></button>
+    <p class="step">आज रात का अभ्यास: बच्चा यह पढ़े <span class="en-inline" lang="en">Tonight's practice</span></p>
+    <div id="p-card" class="card" lang="hi"></div>
+    <button id="p-rec" class="mic ui-btn big">🎤 बच्चे से पढ़वाइए</button>
+    <p id="p-status" class="status" aria-live="polite"></p>
+    <div id="p-marked" class="card marked kt-mark" lang="hi" hidden></div>
+    <p id="p-verdict" class="verdict"></p>
+    <button id="p-again" class="ui-btn ui-btn--ghost secondary" hidden>एक बार और पढ़ें</button>
+    <button id="p-done" class="ui-btn ui-btn--ghost secondary">हो गया</button>
   </section>
 </main>
 <script src="/static/app.js"></script>
