@@ -55,7 +55,9 @@ test("teacher checks an unsure reading", async ({ page, request }) => {
   r = await request.post("/api/read", { multipart: { session_id: s.session_id, level: "word", audio: clip("word-13.wav") } });
   const reading = await r.json();
   expect(reading.needs_teacher).toBe(true);
-  await page.goto("/teacher/" + t.code);
+  // the class code alone (what parents have) is refused
+  expect((await request.get(`/api/teacher/${t.code}/queue`)).status()).toBe(403);
+  await page.goto(`/teacher/${t.code}#k=${t.key}`);    // the teacher's private link
   await expect(page.locator("#share")).toContainText("?t=" + t.code);
   const card = page.locator("#items .card").first();
   await expect(card).toContainText("शब्द");

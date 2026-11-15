@@ -62,32 +62,53 @@ def test_silence_returns_retry_not_a_result(client, tmp_path):
     assert r.status_code == 422 and r.json()["detail"]["code"] == "nothing_heard"
 
 
+def teacher(client, name="Class 3B"):
+    t = client.post("/api/teacher", json={"name": name}).json()
+    assert len(t["key"]) >= 32 and t["code"] and t["key"] != t["code"]
+    return t["code"], {"X-Teacher-Key": t["key"]}
+
+
 def test_teacher_queue_confirm_and_impact(client):
-    t = client.post("/api/teacher", json={"name": "Class 3B"}).json()
-    code = t["code"]
+    code, key = teacher(client)
     s = start(client, teacher=code)
     r = read(client, s["session_id"], "paragraph", "paragraph-18.wav")       # clean: not unsure
     r2 = read(client, s["session_id"], "story", "story-39.wav")              # skipped words
-    q = client.get(f"/api/teacher/{code}/queue").json()["items"]
+    q = client.get(f"/api/teacher/{code}/queue", headers=key).json()["items"]
     ids = [i["reading_id"] for i in q]
     assert r2["reading_id"] in ids or not r2["needs_teacher"]
     assert all(i["level"] in ("paragraph", "story", "word", "letter") for i in q)
-    # audio only with the teacher's code
-    assert client.get(f"/api/teacher/WRONG/audio/{r['reading_id']}").status_code == 404
-    # teacher marks every word right on the story -> passes, final level updates for the parent
-    item = next(i for i in client.get(f"/api/teacher/{code}/all").json()["items"] if i["reading_id"] == r2["reading_id"])
-    c = client.post(f"/api/teacher/{code}/confirm", json={"reading_id": r2["reading_id"], "wrong": []}).json()
+    assert client.get(f"/api/teacher/{code}/audio/{r['reading_id']}", headers=key).status_code == 200
+    c = client.post(f"/api/teacher/{code}/confirm", json={"reading_id": r2["reading_id"], "wrong": []}, headers=key).json()
     assert c["passed"] is True and c["mistakes"] == 0
     st = client.get(f"/api/session/{s['session_id']}").json()
     assert st["final_level"] == "story" and st["teacher_checked"] is True
     # audio deleted once the teacher has checked it
-    assert client.get(f"/api/teacher/{code}/audio/{r2['reading_id']}").status_code == 410
+    assert client.get(f"/api/teacher/{code}/audio/{r2['reading_id']}", headers=key).status_code == 410
     imp = client.get("/api/impact").json()
     db = sqlite3.connect(pathlib.Path(__import__("os").environ["DATA_DIR"]) / "kahani.db")
     assert imp["children_checked"] == db.execute("select count(distinct child_key) from sessions where id in (select session_id from readings)").fetchone()[0]
     assert imp["readings"] == db.execute("select count(*) from readings").fetchone()[0]
     assert imp["teacher_checked"] == db.execute("select count(*) from readings where confirmed_at is not null").fetchone()[0]
     assert set(imp["levels"]) == {"beginner", "letter", "word", "paragraph", "story"}
+
+
+def test_class_code_alone_cannot_act_as_teacher(client):
+    """Parents get the class code in their link. It must not open the queue, audio or confirmation."""
+    code, key = teacher(client, "Locked class")
+    s = start(client, teacher=code)
+    r = read(client, s["session_id"], "paragraph", "story-39.wav")           # fails -> unsure? not needed
+    rid = r["reading_id"]
+    for headers in ({}, {"X-Teacher-Key": code}, {"X-Teacher-Key": "x" * 43}):
+        assert client.get(f"/api/teacher/{code}/queue", headers=headers).status_code == 403
+        assert client.get(f"/api/teacher/{code}/all", headers=headers).status_code == 403
+        assert client.get(f"/api/teacher/{code}/audio/{rid}", headers=headers).status_code == 403
+        assert client.post(f"/api/teacher/{code}/confirm", json={"reading_id": rid, "wrong": []}, headers=headers).status_code == 403
+    # another class's key does not open this class
+    _, other = teacher(client, "Other class")
+    assert client.get(f"/api/teacher/{code}/queue", headers=other).status_code == 403
+    # the key never appears in anything a parent can see
+    assert key["X-Teacher-Key"] not in json.dumps(client.get(f"/api/session/{s['session_id']}").json())
+    assert key["X-Teacher-Key"] not in client.get("/?t=" + code).text
 
 
 def test_impact_page_and_parent_page_serve(client):
