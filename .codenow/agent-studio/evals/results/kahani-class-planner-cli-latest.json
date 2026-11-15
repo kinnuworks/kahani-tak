@@ -1,0 +1,42 @@
+{
+  "model": "claude-sonnet-5-5",
+  "passed": 7,
+  "total": 7,
+  "cases": [
+    {
+      "name": "mixed class: every non-empty group named",
+      "pass": true,
+      "reason": "all contains matched"
+    },
+    {
+      "name": "mixed class: no invented fifth child",
+      "pass": true,
+      "reason": "no forbidden terms"
+    },
+    {
+      "name": "low-level class: never called weak",
+      "pass": true,
+      "reason": "no forbidden terms"
+    },
+    {
+      "name": "low-level class: uses the exact group size",
+      "pass": true,
+      "reason": "regex matched"
+    },
+    {
+      "name": "mixed class: waiting readings mentioned",
+      "pass": true,
+      "reason": "matched \"2 रीडिंग\""
+    },
+    {
+      "name": "empty class: says there is nothing to plan",
+      "pass": true,
+      "reason": "matched \"नहीं हुई\""
+    },
+    {
+      "name": "plain text for a phone: no markdown",
+      "pass": true,
+      "reason": "no forbidden terms"
+    }
+  ]
+}

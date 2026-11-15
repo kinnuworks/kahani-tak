@@ -28,3 +28,8 @@ e2e/results/
 __pycache__/
 *.pyc
 data/
+
+# AgentFoundry local caches
+.codenow/agent-studio/traces/
+.codenow/agent-drafts/
+.codenow/agents/

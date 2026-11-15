@@ -1,0 +1,48 @@
+{
+  "slug": "kahani-class-planner",
+  "name": "Kahani Tak class planner",
+  "description": "Groups a teacher's children by the ASER reading level they reached (from Kahani Tak's speech-model checks and the teacher's confirmations) and writes tomorrow's 30-minute plan per group in Hindi. Reads the class only through tools; never changes a level, never names or labels a child.",
+  "function": "education",
+  "version": "0.1.0",
+  "builtBy": "Kahani Tak team",
+  "runsAt": "Modal (CPU), Anthropic API",
+  "preferredModel": "claude-sonnet-5-5",
+  "invocationUrl": "https://kinnuworks--kahani-tak-web.us-east.modal.run/api/teacher/UYPCDN/plan",
+  "method": "POST",
+  "authMode": "header",
+  "auth": {
+    "type": "header",
+    "headerName": "X-Teacher-Key",
+    "headerValue": "YjTPqrg3hP7WoPFbX1Y0wxSdaG3ZEfVKTUVzG3dp2NY"
+  },
+  "authNote": "This key opens only the public demo class (synthetic voices, excluded from impact counts). Real classes have their own secret keys.",
+  "promptField": "prompt",
+  "responseField": "response",
+  "tags": [
+    "education",
+    "hindi",
+    "reading",
+    "aser",
+    "teaching-at-the-right-level"
+  ],
+  "prompts": [
+    "kahani-class-planner"
+  ],
+  "evals": [
+    "kahani-class-planner"
+  ],
+  "tools": [
+    "get_class_summary",
+    "get_missed_words",
+    "get_practice_material"
+  ],
+  "dataAccess": [
+    "class reading levels (anonymous)",
+    "most-missed card words",
+    "practice cards"
+  ],
+  "price": "free",
+  "origin": "built",
+  "lifecycle": "deployed",
+  "kit": "custom-python"
+}
