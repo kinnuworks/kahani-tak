@@ -46,6 +46,7 @@ test("parent checks a child's reading level", async ({ page }) => {
 
 // Teacher confirms an unsure reading; the parent's session updates.
 test("teacher checks an unsure reading", async ({ page, request }) => {
+  const before = await (await request.get("/api/impact")).json();
   const t = await (await request.post("/api/teacher", { data: { name: "Test class" } })).json();
   const s = await (await request.post("/api/session", { data: { klass: 2, consent: true, child_key: "e2e-child", teacher_code: t.code, set_id: "A" } })).json();
   const clip = (f: string) => ({ name: f, mimeType: "audio/wav", buffer: fs.readFileSync(path.resolve(__dirname, "../tests/fixtures", f)) });
@@ -63,6 +64,7 @@ test("teacher checks an unsure reading", async ({ page, request }) => {
   await expect(page.locator("#items")).toContainText("पक्का हो गया");
   const st = await (await request.get("/api/session/" + s.session_id)).json();
   expect(st.teacher_checked).toBe(true);
+  // our own runs carry the test token and must never move the public impact numbers
   const imp = await (await request.get("/api/impact")).json();
-  expect(imp.teacher_checked).toBeGreaterThanOrEqual(1);
+  if (process.env.TEST_TOKEN) expect(imp.teacher_checked).toBe(before.teacher_checked);
 });
