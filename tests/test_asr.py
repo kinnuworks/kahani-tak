@@ -35,7 +35,7 @@ def test_phone_formats_decode(model):
     # Android Chrome records webm/opus; must decode to the same words as the wav
     a = scoring.normalize(model.transcribe_file(FIX / "paragraph-18.wav"))
     b = scoring.normalize(model.transcribe_file(FIX / "paragraph-18.webm"))
-    assert len(set(a) & set(b)) >= len(a) - 2
+    assert len(set(a) & set(b)) >= len(set(a)) - 2   # compare distinct words; the card repeats है and गाय
 
 
 def test_silence_is_nothing_heard(model, tmp_path):
