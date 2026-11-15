@@ -42,7 +42,7 @@ def test_first_card_is_paragraph_and_clean_read_moves_to_story(client):
     assert s["level"] == "paragraph" and "रानी" in s["card"]
     r = read(client, s["session_id"], "paragraph", "paragraph-18.wav")
     assert r["passed"] is True and r["next_level"] == "story" and "सोनू" in r["next_card"]
-    assert len(r["words"]) == 16 and all("ok" in w for w in r["words"])
+    assert len(r["words"]) == len(s["card"].replace("।", " ").split()) and all("ok" in w for w in r["words"])
     assert r["practice"]                                     # tonight's practice is always given
 
 
