@@ -2,6 +2,7 @@
 <html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kahani Tak — टीचर</title><link rel="stylesheet" href="/static/app.css"></head>
 <body><main>
+<p id="preview-banner" class="note" hidden>Preview: <b id="preview-name"></b>. उदाहरण डेटा, कोई असली जाँच नहीं।</p>
 <h1>Kahani Tak <span class="hi">टीचर</span></h1>
 <section id="make" hidden>
   <p class="lead">अपनी कक्षा का कोड बनाइए। माता-पिता इस कोड वाले लिंक से जाँच करेंगे, और जिन जाँचों पर मशीन पक्की नहीं है, वे आपके पास आएँगी।</p>
@@ -19,12 +20,12 @@
 </section>
 </main>
 <script>
-const code = (location.pathname.split("/")[2] || "").toUpperCase();
+const previewState = new URLSearchParams(location.search).get("state");
+const code = previewState ? "" : (location.pathname.split("/")[2] || "").toUpperCase();
 const key = new URLSearchParams(location.hash.slice(1)).get("k") || "";   // fragment: never sent to the server
 const H = { "X-Teacher-Key": key };
 const HI = { letter: "अक्षर", word: "शब्द", paragraph: "अनुच्छेद", story: "कहानी" };
 const el = (t, a = {}, txt) => { const e = document.createElement(t); Object.assign(e, a); if (txt != null) e.textContent = txt; return e; };
-if (!code) { document.getElementById("make").hidden = false; }
 document.getElementById("create").onclick = async () => {
   const name = document.getElementById("cname").value.trim() || "मेरी कक्षा";
   const r = await fetch("/api/teacher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
@@ -33,7 +34,9 @@ document.getElementById("create").onclick = async () => {
 async function load() {
   const r = await fetch(`/api/teacher/${code}/queue`, { headers: H });
   if (!r.ok) { if (!document.querySelector(".error")) document.body.querySelector("main").append(el("p", { className: "error" }, "यह टीचर का निजी लिंक नहीं है। कोड बनाते समय मिला पूरा लिंक खोलें।")); return; }
-  const q = await r.json();
+  render(await r.json(), code);
+}
+function render(q, code) {
   const link = location.origin + "/?t=" + code;
   document.getElementById("queue").hidden = false;
   document.getElementById("share").textContent = link;
@@ -74,6 +77,26 @@ document.getElementById("plan-btn").onclick = async () => {
   out.textContent = r.ok ? d.response : "योजना नहीं बन पाई (" + r.status + "). थोड़ी देर बाद फिर कोशिश करें।";
   b.disabled = false;
 };
+async function preview(state) {
+  document.getElementById("preview-banner").hidden = false; document.getElementById("preview-name").textContent = state;
+  const ex = await (await fetch("/static/example.json")).json();
+  const plan = await (await fetch("/static/example-plan.json")).json();
+  const item = { reading_id: "preview", klass: 3, level: "paragraph", words: ex.words, passed: ex.passed, mistakes: ex.mistakes };
+  const q = { name: "कक्षा 3 (उदाहरण)", items: [item] };
+  const out = document.getElementById("plan");
+  const views = {
+    create: () => { document.getElementById("make").hidden = false; },
+    queue: () => render(q, "DEMO42"),
+    "queue-empty": () => render({ name: q.name, items: [] }, "DEMO42"),
+    "plan-loading": () => { render(q, "DEMO42"); out.hidden = false; out.textContent = "योजना बन रही है… (लगभग आधा मिनट)"; },
+    plan: () => { render(q, "DEMO42"); out.hidden = false; out.textContent = plan.response; },
+    "wrong-key": () => { document.querySelector("main").append(el("p", { className: "error" }, "यह टीचर का निजी लिंक नहीं है। कोड बनाते समय मिला पूरा लिंक खोलें।")); },
+  };
+  (views[state] || views.create)();
+  for (const b of document.querySelectorAll("#items button")) b.onclick = null;
+}
+if (previewState) { preview(previewState); }
+else if (!code) { document.getElementById("make").hidden = false; }
 if (code) { load(); setInterval(() => { if (![...document.querySelectorAll("audio")].some((a) => !a.paused)) load(); }, 30000); }
 </script>
 </body></html>

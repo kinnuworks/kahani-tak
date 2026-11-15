@@ -17,6 +17,13 @@ let session = null, level = null, card = null, rec = null, chunks = [], lastFina
 const params = new URLSearchParams(location.search);
 const teacherCode = params.get("t");
 const cardSet = params.get("set");   // demos and tests can fix the card set, e.g. ?set=A
+const previewState = params.get("state");   // ?state=... shows one screen with example data (design work)
+const MSG = {
+  mic: "माइक की अनुमति नहीं मिली। ब्राउज़र में ऊपर ताले 🔒 पर दबाकर माइक्रोफ़ोन चालू करें।",
+  nothing: "आवाज़ साफ़ नहीं आई। फ़ोन बच्चे के पास रखें और एक बार फिर पढ़वाएँ।",
+  network: "इंटरनेट से जुड़ नहीं पाया। फिर कोशिश करें।",
+  server: (code) => "जाँच नहीं हो पाई (" + code + ")। फिर कोशिश करें।",
+};
 
 function newKey() { const k = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); store.set("kt_child", k); return k; }
 function show(id) { for (const s of document.querySelectorAll(".screen")) s.hidden = s.id !== id; window.scrollTo(0, 0); }
@@ -59,7 +66,7 @@ $("rec").addEventListener("click", async () => {
   err("");
   let stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch (e) { err("माइक की अनुमति नहीं मिली। ब्राउज़र में ऊपर ताले 🔒 पर दबाकर माइक्रोफ़ोन चालू करें।"); return; }
+  catch (e) { err(MSG.mic); return; }
   const mime = pickMime();
   rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
   chunks = [];
@@ -78,10 +85,10 @@ async function send(blob) {
   fd.append("audio", blob, "reading." + (blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm"));
   let r;
   try { r = await fetch("/api/read", { method: "POST", body: fd }); }
-  catch (e) { $("rec").disabled = false; $("rec").textContent = "🎤 फिर से पढ़वाइए"; err("इंटरनेट से जुड़ नहीं पाया। फिर कोशिश करें।"); return; }
+  catch (e) { $("rec").disabled = false; $("rec").textContent = "🎤 फिर से पढ़वाइए"; err(MSG.network); return; }
   const data = await r.json().catch(() => ({}));
-  if (r.status === 422) { $("rec").disabled = false; $("rec").textContent = "🎤 फिर से पढ़वाइए"; err("आवाज़ साफ़ नहीं आई। फ़ोन बच्चे के पास रखें और एक बार फिर पढ़वाएँ।"); return; }
-  if (!r.ok) { $("rec").disabled = false; $("rec").textContent = "🎤 फिर से पढ़वाइए"; err("जाँच नहीं हो पाई (" + r.status + ")। फिर कोशिश करें।"); return; }
+  if (r.status === 422) { $("rec").disabled = false; $("rec").textContent = "🎤 फिर से पढ़वाइए"; err(MSG.nothing); return; }
+  if (!r.ok) { $("rec").disabled = false; $("rec").textContent = "🎤 फिर से पढ़वाइए"; err(MSG.server(r.status)); return; }
   showResult(data);
 }
 
@@ -113,6 +120,7 @@ function showFinal(d) {
 
 function watchTeacher() {
   clearInterval(pollTimer);
+  if (previewState || !session) return;
   const t = $("teacher-status");
   const tick = async () => {
     const r = await fetch("/api/session/" + session.session_id).catch(() => null);
@@ -133,3 +141,40 @@ $("speak").addEventListener("click", () => {
   u.lang = "hi-IN"; speechSynthesis.cancel(); speechSynthesis.speak(u);
 });
 $("again").addEventListener("click", () => { childKey = newKey(); clearInterval(pollTimer); session = null; $("consent").checked = false; $("begin").disabled = true; show("start"); });
+
+// ---------- first-screen example: a real result of this app on a synthetic voice ----------
+fetch("/static/example.json").then((r) => r.json()).then((ex) => {
+  const box = $("example"), m = box.querySelector(".marked");
+  ex.words.forEach((w) => { const sp = document.createElement("span"); sp.textContent = w.text; sp.className = w.ok ? "ok" : "bad"; m.append(sp, " "); });
+  $("example-line").textContent = ex.mistakes + " शब्द छूटे (लाल)। ASER के नियम से 3 तक गलती पर अनुच्छेद पास, पर गिनती सीमा के पास है, इसलिए टीचर सुनकर पक्का करेंगी।";
+  box.hidden = false;
+}).catch(() => { /* example is optional; the check still works */ });
+
+// ---------- ?state= previews ----------
+async function preview(state) {
+  $("preview-banner").hidden = false; $("preview-name").textContent = state;
+  const d = await (await fetch("/api/preview")).json();
+  const ex = await (await fetch("/static/example.json")).json();
+  const c = d.cards;
+  const fin = (lv, extra = {}) => showFinal({ final_level: lv, practice: d.practice[lv], ...extra });
+  const statusLine = (txt) => { $("teacher-status").hidden = false; $("teacher-status").textContent = txt; };
+  const views = {
+    start: () => show("start"),
+    read: () => goRead("paragraph", c.paragraph),
+    recording: () => { goRead("paragraph", c.paragraph); $("rec").textContent = "⏹ पढ़ना हो गया"; $("rec").classList.add("on"); $("rec-status").textContent = "सुन रहे हैं… बच्चा पूरा पढ़ ले, फिर दबाएँ।"; },
+    checking: () => { goRead("paragraph", c.paragraph); $("rec").disabled = true; $("rec-status").textContent = "जाँच रहे हैं… (लगभग आधा मिनट)"; },
+    "result-pass": () => showResult({ words: c.paragraph.replace(/।/g, " ").split(/\s+/).filter(Boolean).map((t) => ({ text: t, ok: true })), mistakes: 0, needs_teacher: false, teacher_linked: false, final_level: null, next_level: "story", next_card: c.story }),
+    "result-teacher": () => showResult({ ...ex, teacher_linked: true, final_level: null, next_level: "story", next_card: c.story }),
+    "final-story": () => fin("story"), "final-paragraph": () => fin("paragraph"), "final-word": () => fin("word"),
+    "final-letter": () => fin("letter"), "final-beginner": () => fin("beginner"),
+    "final-waiting": () => { fin("paragraph"); statusLine("⏳ टीचर अभी जाँच रही हैं। यह पेज खुला रखें, अपने आप बदल जाएगा।"); },
+    "final-checked": () => { fin("paragraph"); statusLine("✅ टीचर ने जाँच लिया।"); },
+    "error-mic": () => { goRead("paragraph", c.paragraph); err(MSG.mic); },
+    "error-nothing-heard": () => { goRead("paragraph", c.paragraph); err(MSG.nothing); },
+    "error-network": () => { goRead("paragraph", c.paragraph); err(MSG.network); },
+    "error-server": () => { goRead("paragraph", c.paragraph); err(MSG.server(503)); },
+  };
+  (views[state] || views.start)();
+  if (state === "result-pass" || state === "result-teacher") $("next").onclick = null;
+}
+if (previewState) preview(previewState);

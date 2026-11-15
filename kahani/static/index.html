@@ -8,6 +8,7 @@
 </head>
 <body>
 <main id="app">
+  <p id="preview-banner" class="note" hidden>Preview: <b id="preview-name"></b>. उदाहरण डेटा, कोई असली जाँच नहीं।</p>
   <header>
     <h1>Kahani Tak <span class="hi">कहानी तक</span></h1>
     <p class="lead">आपका बच्चा एक कार्ड ज़ोर से पढ़े। एक मिनट में जानिए वह कहाँ तक पढ़ पाता है, और आज रात 5 मिनट क्या पढ़ाएँ।</p>
@@ -23,6 +24,11 @@
     <p id="teacher-note" class="note" hidden></p>
     <label class="check"><input type="checkbox" id="consent"> मैं इस बच्चे का माता/पिता/अभिभावक हूँ और 18 साल से बड़ा/बड़ी हूँ। मैं बच्चे की आवाज़ जाँच के लिए भेजने की अनुमति देता/देती हूँ।</label>
     <button id="begin" class="big" disabled>शुरू करें</button>
+    <div id="example" class="example" hidden>
+      <p class="small"><b>उदाहरण:</b> ऐसे दिखता है नतीजा। यह कंप्यूटर की आवाज़ (किसी बच्चे की नहीं) से पढ़वाने पर इसी ऐप का असली नतीजा है।</p>
+      <div class="card marked" lang="hi"></div>
+      <p class="small" id="example-line"></p>
+    </div>
     <ul class="small">
       <li>हिंदी, कक्षा 1 से 5 के बच्चों के लिए</li>
       <li>बच्चे का नाम नहीं माँगते। आवाज़ जाँच के बाद मिटा दी जाती है (ज़्यादा से ज़्यादा 7 दिन में)।</li>

@@ -2,6 +2,7 @@
 <html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kahani Tak — अब तक</title><link rel="stylesheet" href="/static/app.css"></head>
 <body><main>
+<p id="preview-banner" class="note" hidden>Preview: <b id="preview-name"></b>. Example numbers, not real data.</p>
 <h1>Kahani Tak <span class="hi">अब तक / so far</span></h1>
 <p class="lead">ये संख्याएँ सीधे डेटाबेस से आती हैं, हर बार पेज खुलने पर। These numbers come straight from the live database.</p>
 <div class="grid" id="grid"></div>
@@ -12,7 +13,14 @@
 </main>
 <script>
 (async () => {
-  const d = await (await fetch("/api/impact")).json();
+  const st = new URLSearchParams(location.search).get("state");
+  let d = await (await fetch("/api/impact")).json();
+  if (st) {
+    document.getElementById("preview-banner").hidden = false; document.getElementById("preview-name").textContent = st;
+    const z = { beginner: 0, letter: 0, word: 0, paragraph: 0, story: 0 };
+    d = st === "empty" ? { children_checked: 0, checks_finished: 0, readings: 0, levels: z, teacher_checked: 0, teacher_agreed: 0, rechecked_children: 0, teachers: 0, updated: "preview" }
+      : { children_checked: 12, checks_finished: 11, readings: 19, levels: { beginner: 1, letter: 1, word: 3, paragraph: 4, story: 2 }, teacher_checked: 6, teacher_agreed: 5, rechecked_children: 2, teachers: 1, updated: "preview" };
+  }
   const cells = [["बच्चों की जाँच / children checked", d.children_checked], ["पूरी जाँच / checks finished", d.checks_finished],
     ["रिकॉर्डिंग / readings", d.readings], ["टीचर ने जाँचा / teacher-checked", d.teacher_checked],
     ["टीचर सहमत / teacher agreed", d.teacher_checked ? Math.round(100 * d.teacher_agreed / d.teacher_checked) + "%" : "—"],

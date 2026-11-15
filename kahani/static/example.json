@@ -1,0 +1,85 @@
+{
+ "source": "tests/fixtures/paragraph-27.wav (synthetic voice, not a child)",
+ "level": "paragraph",
+ "words": [
+  {
+   "text": "मेरा",
+   "ok": true
+  },
+  {
+   "text": "नाम",
+   "ok": true
+  },
+  {
+   "text": "रानी",
+   "ok": true
+  },
+  {
+   "text": "है",
+   "ok": false
+  },
+  {
+   "text": "मेरे",
+   "ok": false
+  },
+  {
+   "text": "घर",
+   "ok": false
+  },
+  {
+   "text": "में",
+   "ok": true
+  },
+  {
+   "text": "एक",
+   "ok": true
+  },
+  {
+   "text": "गाय",
+   "ok": true
+  },
+  {
+   "text": "है",
+   "ok": true
+  },
+  {
+   "text": "गाय",
+   "ok": true
+  },
+  {
+   "text": "का",
+   "ok": true
+  },
+  {
+   "text": "रंग",
+   "ok": true
+  },
+  {
+   "text": "सफ़ेद",
+   "ok": true
+  },
+  {
+   "text": "है",
+   "ok": true
+  },
+  {
+   "text": "वह",
+   "ok": true
+  },
+  {
+   "text": "घास",
+   "ok": true
+  },
+  {
+   "text": "खाती",
+   "ok": true
+  },
+  {
+   "text": "है",
+   "ok": true
+  }
+ ],
+ "mistakes": 3,
+ "passed": true,
+ "needs_teacher": true
+}

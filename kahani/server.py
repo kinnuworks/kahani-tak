@@ -94,6 +94,12 @@ def impact_page():
     return page("impact.html")
 
 
+@app.get("/api/preview")
+def preview_data():
+    """Read-only example content for ?state= previews: card set A, practice for every level."""
+    return {"cards": CARDS[SET_IDS[0]], "practice": {lv: practice_for(lv, SET_IDS[0]) for lv in LEVELS}}
+
+
 @app.get("/healthz")
 def healthz():
     return {"ok": True, "model_loaded": getattr(app.state, "transcriber", None) is not None}
