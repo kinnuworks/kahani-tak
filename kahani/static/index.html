@@ -12,6 +12,7 @@
   <header>
     <h1>Kahani Tak <span class="hi">कहानी तक</span></h1>
     <p class="lead">आपका बच्चा एक कार्ड ज़ोर से पढ़े। एक मिनट में जानिए वह कहाँ तक पढ़ पाता है, और आज रात 5 मिनट क्या पढ़ाएँ।</p>
+    <p class="en" lang="en">Your child reads one Hindi card aloud. You see which words were read right, the child's reading level (ASER scale), and a 5-minute practice for tonight. Unsure results go to the teacher.</p>
   </header>
 
   <section id="start" class="screen">
@@ -22,10 +23,11 @@
       </select>
     </label>
     <p id="teacher-note" class="note" hidden></p>
-    <label class="check"><input type="checkbox" id="consent"> मैं इस बच्चे का माता/पिता/अभिभावक हूँ और 18 साल से बड़ा/बड़ी हूँ। मैं बच्चे की आवाज़ जाँच के लिए भेजने की अनुमति देता/देती हूँ।</label>
-    <button id="begin" class="big" disabled>शुरू करें</button>
+    <label class="check"><input type="checkbox" id="consent"> मैं इस बच्चे का माता/पिता/अभिभावक हूँ और 18 साल से बड़ा/बड़ी हूँ। मैं बच्चे की आवाज़ जाँच के लिए भेजने की अनुमति देता/देती हूँ। <span class="en" lang="en">(I am the parent or guardian, over 18, and agree to send the reading for checking.)</span></label>
+    <button id="begin" class="big" disabled>शुरू करें <span class="en-inline" lang="en">Start</span></button>
     <div id="example" class="example" hidden>
-      <p class="small"><b>उदाहरण:</b> ऐसे दिखता है नतीजा। यह कंप्यूटर की आवाज़ (किसी बच्चे की नहीं) से पढ़वाने पर इसी ऐप का असली नतीजा है।</p>
+      <p class="example-tag">उदाहरण <span lang="en">· Example result</span></p>
+      <p class="small">ऐसे दिखता है नतीजा। यह कंप्यूटर की आवाज़ (किसी बच्चे की नहीं) से पढ़वाने पर इसी ऐप का असली नतीजा है। <span lang="en">This app's real output on a computer voice, not a child.</span></p>
       <div class="card marked" lang="hi"></div>
       <p class="small" id="example-line"></p>
     </div>

@@ -2,10 +2,14 @@
 
 A parent's phone listens to a child read one Hindi card aloud, marks every word right or wrong, and says which ASER reading level the child reached and what to practise tonight. Results the machine isn't sure of go to the child's teacher, who listens and confirms.
 
-It needs agentic AI because the checking runs as a chain of decisions: a speech model that writes down what the child actually said (AI4Bharat IndicConformer, not an LLM, which would quietly correct a misread word), code that applies ASER's rules and picks the next card, and an AgentFoundry agent that turns a class's confirmed levels into tomorrow's level-wise groups for the teacher.
+It needs agentic AI because the checking runs as a chain of decisions: a speech model that writes down what the child actually said (AI4Bharat IndicConformer, not an LLM, which would quietly correct a misread word), code that applies ASER's rules and picks the next card, and a class-planner agent, built and evaluated in AgentFoundry (the hackathon's agent IDE), that reads a class's confirmed levels through its tools and writes tomorrow's level-wise groups and activities for the teacher.
 
 ![A parent's phone: the child reads a paragraph, words are marked, the story card follows, the level lights up on the ladder and tonight's practice appears](docs/core-loop.gif)
 <sub>Recorded by our automated browser test with a synthetic voice. No child's voice is published.</sub>
+
+<img src="docs/teacher-plan.png" width="300" alt="Teacher page: a reading waiting for confirmation with words marked, and the agent's plan for tomorrow grouping children by level">
+
+<sub>Teacher side: a borderline reading waiting for the teacher, and the agent's real plan for the demo class (synthetic voices).</sub>
 
 **Live app:** https://kinnuworks--kahani-tak-web.us-east.modal.run
 **Live impact numbers:** https://kinnuworks--kahani-tak-web.us-east.modal.run/impact
