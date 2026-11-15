@@ -43,3 +43,12 @@ def test_silence_is_nothing_heard(model, tmp_path):
     p = tmp_path / "silence.wav"; sf.write(p, np.zeros(16000 * 2, dtype="float32"), 16000)
     with pytest.raises(scoring.NothingHeard):
         scoring.score_reading("paragraph", CARDS["paragraph"], model.transcribe_file(p))
+
+
+def test_first_screen_example_is_the_models_real_output(model):
+    """The labelled example on the first screen must be what the model really produces on that clip."""
+    import sys
+    sys.path.insert(0, str(FIX.parent.parent))
+    from scripts.make_example import build
+    stored = json.loads((FIX.parent.parent / "kahani/static/example.json").read_text())
+    assert build(model) == stored
