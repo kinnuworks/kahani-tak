@@ -10,6 +10,7 @@
 </section>
 <section id="queue" hidden>
   <p class="note">माता-पिता को यह लिंक भेजें: <b id="share"></b> <button id="copy">कॉपी</button></p>
+  <p class="note" id="private-note">🔒 यह पेज सिर्फ़ आपका है। इसका पूरा लिंक (पता) अपने पास सँभालकर रखें और किसी को न भेजें। इसी लिंक से आप जाँच पक्की कर सकती हैं।</p>
   <p id="counts"></p>
   <div id="items"></div>
   <p class="small">हर जाँच में लाल शब्द मशीन ने गलत माने। सुनकर जो शब्द सच में गलत/छूटे हों, उन्हें दबाकर लाल करें, बाकी हरे रखें, फिर "पक्का करें" दबाएँ। आपकी जाँच के बाद रिकॉर्डिंग मिटा दी जाती है।</p>
@@ -17,17 +18,19 @@
 </main>
 <script>
 const code = (location.pathname.split("/")[2] || "").toUpperCase();
+const key = new URLSearchParams(location.hash.slice(1)).get("k") || "";   // fragment: never sent to the server
+const H = { "X-Teacher-Key": key };
 const HI = { letter: "अक्षर", word: "शब्द", paragraph: "अनुच्छेद", story: "कहानी" };
 const el = (t, a = {}, txt) => { const e = document.createElement(t); Object.assign(e, a); if (txt != null) e.textContent = txt; return e; };
 if (!code) { document.getElementById("make").hidden = false; }
 document.getElementById("create").onclick = async () => {
   const name = document.getElementById("cname").value.trim() || "मेरी कक्षा";
   const r = await fetch("/api/teacher", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
-  const t = await r.json(); location.href = "/teacher/" + t.code;
+  const t = await r.json(); location.href = "/teacher/" + t.code + "#k=" + t.key;
 };
 async function load() {
-  const r = await fetch(`/api/teacher/${code}/queue`);
-  if (!r.ok) { document.body.querySelector("main").append(el("p", { className: "error" }, "यह कोड नहीं मिला।")); return; }
+  const r = await fetch(`/api/teacher/${code}/queue`, { headers: H });
+  if (!r.ok) { if (!document.querySelector(".error")) document.body.querySelector("main").append(el("p", { className: "error" }, "यह टीचर का निजी लिंक नहीं है। कोड बनाते समय मिला पूरा लिंक खोलें।")); return; }
   const q = await r.json();
   const link = location.origin + "/?t=" + code;
   document.getElementById("queue").hidden = false;
@@ -45,16 +48,22 @@ async function load() {
       s.onclick = () => { wrong.has(i) ? wrong.delete(i) : wrong.add(i); s.className = wrong.has(i) ? "bad" : "ok"; };
       words.append(s, " ");
     });
-    const audio = el("audio", { controls: true, preload: "none", src: `/api/teacher/${code}/audio/${it.reading_id}` });
+    const audio = el("audio", { controls: true });
+    const play = el("button", {}, "▶ रिकॉर्डिंग सुनें");
+    play.onclick = async () => {
+      const a = await fetch(`/api/teacher/${code}/audio/${it.reading_id}`, { headers: H });
+      if (!a.ok) { play.textContent = "रिकॉर्डिंग उपलब्ध नहीं"; return; }
+      audio.src = URL.createObjectURL(await a.blob()); play.replaceWith(audio); audio.play();
+    };
     const ok = el("button", { className: "big" }, "पक्का करें");
     ok.onclick = async () => {
       ok.disabled = true;
-      const r = await fetch(`/api/teacher/${code}/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reading_id: it.reading_id, wrong: [...wrong] }) });
+      const r = await fetch(`/api/teacher/${code}/confirm`, { method: "POST", headers: { "Content-Type": "application/json", ...H }, body: JSON.stringify({ reading_id: it.reading_id, wrong: [...wrong] }) });
       if (r.ok) { d.replaceChildren(el("p", {}, "✅ पक्का हो गया। माता-पिता के फ़ोन पर बदल जाएगा।")); } else { ok.disabled = false; }
     };
-    d.append(words, audio, ok); box.append(d);
+    d.append(words, play, ok); box.append(d);
   }
 }
-if (code) { load(); setInterval(() => { if (!document.querySelector("audio:not([paused])")) load(); }, 30000); }
+if (code) { load(); setInterval(() => { if (![...document.querySelectorAll("audio")].some((a) => !a.paused)) load(); }, 30000); }
 </script>
 </body></html>

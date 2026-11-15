@@ -1,5 +1,6 @@
 """Kahani Tak web app: parent reading check, teacher confirmation, public impact counts."""
 import datetime as dt
+import hashlib
 import json
 import os
 import pathlib
@@ -48,6 +49,8 @@ def db():
         heard text, words text, mistakes int, total int, passed int, needs_teacher int, audio text,
         audio_secs real, model_secs real, teacher_words text, teacher_passed int, confirmed_at text);
     """)
+    if "key_hash" not in [r[1] for r in con.execute("pragma table_info(teachers)")]:
+        con.execute("alter table teachers add column key_hash text")
     if "is_test" not in [r[1] for r in con.execute("pragma table_info(sessions)")]:
         con.execute("alter table sessions add column is_test int default 0")
     return con
@@ -236,18 +239,26 @@ class TeacherIn(BaseModel):
 
 @app.post("/api/teacher")
 def new_teacher(body: TeacherIn):
+    """Class code: public, goes in the parent link. Teacher key: secret, shown once, stored only as a hash."""
     code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6))
+    key = secrets.token_urlsafe(32)
     con = db()
     with _lock, con:
-        con.execute("insert into teachers values(?,?,?)", (code, body.name.strip()[:60], now()))
+        con.execute("insert into teachers(code,name,created,key_hash) values(?,?,?,?)",
+                    (code, body.name.strip()[:60], now(), _hash(key)))
     _wrote()
-    return {"code": code, "name": body.name.strip()[:60]}
+    return {"code": code, "key": key, "name": body.name.strip()[:60]}
 
 
-def _teacher(con, code):
+def _hash(key):
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
+def _teacher(con, code, key):
+    """Every teacher action needs the secret key for this class; the class code alone is refused."""
     row = con.execute("select * from teachers where code=?", (code.upper(),)).fetchone()
-    if not row:
-        raise HTTPException(404, "unknown teacher code")
+    if not row or not key or not row["key_hash"] or not secrets.compare_digest(_hash(key), row["key_hash"]):
+        raise HTTPException(403, "teacher key required")
     return row
 
 
@@ -264,20 +275,20 @@ def _items(con, code, only_open):
 
 
 @app.get("/api/teacher/{code}/queue")
-def teacher_queue(code: str):
-    con = db(); t = _teacher(con, code)
+def teacher_queue(code: str, x_teacher_key: str | None = Header(default=None)):
+    con = db(); t = _teacher(con, code, x_teacher_key)
     return {"name": t["name"], "items": _items(con, code, True)}
 
 
 @app.get("/api/teacher/{code}/all")
-def teacher_all(code: str):
-    con = db(); t = _teacher(con, code)
+def teacher_all(code: str, x_teacher_key: str | None = Header(default=None)):
+    con = db(); t = _teacher(con, code, x_teacher_key)
     return {"name": t["name"], "items": _items(con, code, False)}
 
 
 @app.get("/api/teacher/{code}/audio/{rid}")
-def teacher_audio(code: str, rid: str):
-    con = db(); _teacher(con, code)
+def teacher_audio(code: str, rid: str, x_teacher_key: str | None = Header(default=None)):
+    con = db(); _teacher(con, code, x_teacher_key)
     r = con.execute("select r.audio, r.confirmed_at from readings r join sessions s on s.id=r.session_id "
                     "where r.id=? and s.teacher_code=?", (rid, code.upper())).fetchone()
     if not r:
@@ -293,8 +304,8 @@ class ConfirmIn(BaseModel):
 
 
 @app.post("/api/teacher/{code}/confirm")
-def teacher_confirm(code: str, body: ConfirmIn):
-    con = db(); _teacher(con, code)
+def teacher_confirm(code: str, body: ConfirmIn, x_teacher_key: str | None = Header(default=None)):
+    con = db(); _teacher(con, code, x_teacher_key)
     r = con.execute("select r.* from readings r join sessions s on s.id=r.session_id where r.id=? and s.teacher_code=?",
                     (body.reading_id, code.upper())).fetchone()
     if not r:
